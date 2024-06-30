@@ -2,4 +2,5 @@ deprecated-main.py
 electricity_bot/config.py
 electricity_bot/__pycache__
 .venv
-database.json
+users.json
+schedules.json

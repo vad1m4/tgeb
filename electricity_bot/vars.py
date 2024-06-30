@@ -1,17 +1,18 @@
 from telebot import types
 from electricity_bot.config import GROUP
+from datetime import datetime
 
 subscribe_str = "Підписатися на сповіщення"
 unsubscribe_str = "Відписатися від сповіщень"
 state_str = "Який стан світла?"
 schedule_str = f"Графік відключень групи {GROUP}"
 
-generic = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
+generic_markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
 subscribe = types.KeyboardButton(subscribe_str)
 unsubscribe = types.KeyboardButton(unsubscribe_str)
 state = types.KeyboardButton(state_str)
 schedule = types.KeyboardButton(schedule_str)
-generic.add(subscribe, unsubscribe, state, schedule)
+generic_markup.add(subscribe, unsubscribe, state, schedule)
 
 none = types.ReplyKeyboardRemove()
 
