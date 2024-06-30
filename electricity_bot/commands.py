@@ -25,10 +25,10 @@ def loop(bot: TeleBot, run_event: Thread) -> None:
         bot.state_v = True
 
     bot.general_logger.info(
-        f"Electricity checker thread initialized. Initial state: {a['plugged']}"
+        f"Electricity checker thread initialized. Initial state: {a.result['plugged']}"
     )
     bot.outage_logger.info(
-        f"Electricity checker thread initialized. Initial state: {a['plugged']}"
+        f"Electricity checker thread initialized. Initial state: {a.result['plugged']}"
     )
     while run_event.is_set():
         time.sleep(10)
