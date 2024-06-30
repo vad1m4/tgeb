@@ -4,7 +4,13 @@ import os
 
 
 class TGEBLogger(logging.Logger):
-    def __init__(self, name: str, log_file: str,  stream: bool = False, level=logging.INFO,):
+    def __init__(
+        self,
+        name: str,
+        log_file: str,
+        stream: bool = False,
+        level=logging.INFO,
+    ):
         super().__init__(name)
         self.formatter = logging.Formatter(
             "[%(asctime)s] %(levelname)s - %(message)s", "%Y-%m-%d %H:%M:%S"
@@ -21,10 +27,11 @@ class TGEBLogger(logging.Logger):
             self.stream = logging.StreamHandler()
             self.stream.setFormatter(self.formatter)
             self.addHandler(self.stream)
-        
+
         self.setLevel(level)
         self.addHandler(self.handler)
-        
+
+        self.init(name, True)
 
     def init(self, name: str, success: bool, e: str = ""):
         if success:

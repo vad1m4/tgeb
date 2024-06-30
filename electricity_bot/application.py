@@ -1,5 +1,4 @@
 import telebot
-from telebot import types
 from telebot.types import Message
 from electricity_bot.config import admins
 from electricity_bot.storage import JSONFileUserStorage, JSONFileScheduleStorage
@@ -8,10 +7,9 @@ from electricity_bot.vars import subscribe_str, unsubscribe_str, state_str, sche
 from electricity_bot.time import get_date, get_time
 from electricity_bot.logger import TGEBLogger
 import electricity_bot.commands as commands
-import time
 from pathlib import Path
 import threading
-import random
+from telebot import ExceptionHandler
 
 
 class Application(telebot.TeleBot):
@@ -19,23 +17,22 @@ class Application(telebot.TeleBot):
         self.general_logger = TGEBLogger(
             "General logger", f"general_logs/bot_{get_date()}_{get_time('-')}.txt", True
         )
-        self.general_logger.init("General logger", True)
 
         self.outage_logger = TGEBLogger(
             "Outage logger", f"outage_logs/bot_{get_date()}_{get_time('-')}.txt"
         )
-        self.outage_logger.init("Outage logger", True)
         self.general_logger.init("Outage logger", True)
 
         self.user_action_logger = TGEBLogger(
             "User action logger",
             f"user_action_logs/bot_{get_date()}_{get_time('-')}.txt",
         )
-        self.user_action_logger.init("User action logger", True)
         self.general_logger.init("User action logger", True)
 
+        exception_handler = TGEBExceptionHandler(self.general_logger)
+
         try:
-            super().__init__(token, exception_handler=TGEBExceptionHandler())
+            super().__init__(token, exception_handler=exception_handler)
             self.general_logger.init("Telegram bot", True)
         except Exception as e:
             self.general_logger.init("Telegram bot", False)

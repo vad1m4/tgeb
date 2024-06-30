@@ -1,7 +1,7 @@
 from threading import Thread
 import time
 from electricity_bot.config import ADDRESS
-from electricity_bot.vars import generic_markup, none, cancel, generic_choice
+from electricity_bot.vars import generic_markup, cancel, generic_choice
 from electricity_bot.time import get_date, get_time
 from telebot import TeleBot, types
 import random
