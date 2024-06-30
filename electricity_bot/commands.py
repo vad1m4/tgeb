@@ -3,21 +3,23 @@ import time
 from electricity_bot.config import ADDRESS
 from electricity_bot.vars import generic_markup, cancel, generic_choice
 from electricity_bot.time import get_date, get_time
+from electricity_bot import termux_api
 from telebot import TeleBot, types
-import random
+
+# import random
 
 
-def termux_apibattery_status():
-    states = ["PLUGGED", "UNPLUGGED"]
-    result = random.randint(0, 1)
-    print(states[result])
-    return {"plugged": states[result]}
+# def termux_apibattery_status():
+#     states = ["PLUGGED", "UNPLUGGED"]
+#     result = random.randint(0, 1)
+#     print(states[result])
+#     return {"plugged": states[result]}
 
 
 def loop(bot: TeleBot, run_event: Thread) -> None:
 
-    a = termux_apibattery_status()
-    if a["plugged"] == "UNPLUGGED":
+    a = termux_api.battery_status()
+    if a.result["plugged"] == "UNPLUGGED":
         bot.state_v = False
     else:
         bot.state_v = True
@@ -30,10 +32,9 @@ def loop(bot: TeleBot, run_event: Thread) -> None:
     )
     while run_event.is_set():
         time.sleep(10)
-        a = termux_apibattery_status()
         current_time = get_time()
-        print(current_time)
-        if a["plugged"] == "UNPLUGGED":
+        a = termux_api.battery_status()
+        if a.result["plugged"] == "UNPLUGGED":
             if bot.state_v != False:
                 bot.state_v = False
                 bot.general_logger.info(f"Electricity is out. Notifying users.")
