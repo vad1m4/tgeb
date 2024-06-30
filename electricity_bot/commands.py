@@ -169,7 +169,7 @@ def see_schedule(message: types.Message, bot: TeleBot) -> None:
             bot.id_storage.get_schedule(),
             parse_mode="html",
             reply_markup=generic_markup,
-            caption=f"Графік відключень світла на {get_date()}",
+            caption=f"Графік відключень світла на {get_date()}.",
         )
     elif bot.id_storage.exists("generic"):
         bot.send_photo(
@@ -234,7 +234,7 @@ def do_update_schedule(
     bot: TeleBot,
 ):
     if message.text == "Назад":
-        generic()
+        generic(message, bot)
     elif message.text == "Так":
         bot.send_message(
             message.chat.id,
@@ -245,7 +245,7 @@ def do_update_schedule(
         bot.register_next_step_handler(message, handle_photos, bot, False)
 
     elif message.text == "Ні":
-        generic()
+        generic(message, bot)
     else:
         bot.send_message(
             message.chat.id,
@@ -271,10 +271,10 @@ def handle_photos(
             parse_mode="html",
             reply_markup=generic_markup,
         )
-        generic()
+        generic(message, bot)
     else:
         if message.text == "Назад":
-            generic()
+            generic(message, bot)
         else:
             bot.send_message(
                 message.chat.id,
