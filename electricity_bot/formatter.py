@@ -18,13 +18,13 @@ def format(unix: int) -> str:
     components = []
 
     if hours > 0:
-        components.append(f"{hours} {format_text(hours, 'хвилин')}")
+        components.append(f"{hours} {format_text(hours, 'годин')}")
 
     if minutes > 0:
         components.append(f"{minutes} {format_text(minutes, 'хвилин')}")
 
     if seconds > 0:
-        components.append(f"{seconds} {format_text(seconds, 'хвилин')}")
+        components.append(f"{seconds} {format_text(seconds, 'секунд')}")
 
     if len(components) == 1:
         return components[0]
