@@ -110,14 +110,17 @@ class JSONFileOutageStorage(JSONStorage):
             data = json.load(f)
             return data
 
-    def write(self, file_ids: dict) -> None:
+    def write(self, outages: dict) -> None:
         with open(self._jsonfile, "w", encoding="utf-8") as f:
-            json.dump(file_ids, f, indent=4)
+            json.dump(outages, f, indent=4)
 
-    def save(self, file_id: str, date: str = get_date()) -> None:
-        file_ids = self.read()
-        file_ids[date] = file_id
-        self.write(file_ids)
+    def save(self, outage: dict, outage_type: str, date: str = get_date()) -> None:
+        outages = self.read()
+        if "outages" in outage[date]:
+            outage[date]["outages"] = 0
+        else:
+            outage[date]["outages"] += 1
+        outage[date][len(outage[date])][outage_type] = 
 
     def delete(self) -> None:
         file_ids = self.read()
