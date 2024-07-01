@@ -9,6 +9,7 @@ from electricity_bot.exception_handler import TGEBExceptionHandler
 from electricity_bot.vars import subscribe_str, unsubscribe_str, state_str, schedule_str
 from electricity_bot.time import get_date, get_time
 from electricity_bot.logger import TGEBLogger
+from electricity_bot.config import admins
 import electricity_bot.commands as commands
 import electricity_bot.funcs as funcs
 from logging import INFO, DEBUG
@@ -144,7 +145,7 @@ class Application(telebot.TeleBot):
     ### Check if user_id is in self.admins
 
     def is_admin(self, message: Message) -> bool:
-        if not message.from_user.id in self.admins:
+        if not message.from_user.id in admins:
             return False
         else:
             return True
