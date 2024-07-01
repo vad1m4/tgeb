@@ -1,9 +1,11 @@
 from telebot import TeleBot, types
 from electricity_bot.vars import generic_choice, generic_markup, cancel
 from electricity_bot.config import ADDRESS
-from electricity_bot.time import get_time
+from electricity_bot.time import get_time, get_unix
+import electricity_bot.formatter as formatter
 from threading import Thread
 import time
+
 # from application import Application
 
 
@@ -25,9 +27,10 @@ def loop(bot: TeleBot, run_event: Thread) -> None:
     a = termux_api.battery_status()
     if a.result["plugged"] == "UNPLUGGED":
         bot.state_v = False
-        bot.outages_storage.save("start")
+        bot.last_power_off = get_unix()
     else:
         bot.state_v = True
+        bot.last_power_on = get_unix()
 
     bot.general_logger.info(
         f"Electricity checker thread initialized. Initial state: {a.result['plugged']}"
@@ -47,14 +50,14 @@ def loop(bot: TeleBot, run_event: Thread) -> None:
         if a.result["plugged"] == "UNPLUGGED":
             if bot.state_v != False:
                 bot.state_v = False
-                bot.outages_storage.save("start")
+                bot.last_power_off = get_unix()
                 bot.general_logger.info(f"Electricity is out. Notifying users.")
                 bot.outage_logger.warning(f"Electricity is out.")
                 for user_id in bot.user_storage.read():
                     bot.general_logger.info(f"Notified: {user_id}")
                     bot.send_message(
                         user_id,
-                        f"❌ {current_time} - {ADDRESS}, світло вимкнули.",
+                        f"❌ {current_time} - {ADDRESS}, світло вимкнули. Світла було {formatter.format(bot.last_power_off-bot.last_power_on)}",
                         parse_mode="html",
                     )
                 bot.general_logger.info(f"Users notified.")
@@ -63,14 +66,15 @@ def loop(bot: TeleBot, run_event: Thread) -> None:
         else:
             if bot.state_v != True:
                 bot.state_v = True
-                bot.outages_storage.save("end")
+                bot.last_power_on = get_unix()
+                bot.outages_storage.save(bot.last_power_off, bot.last_power_on)
                 bot.general_logger.info(f"Electricity is back on. Notifying users.")
                 bot.outage_logger.warning(f"Electricity is back on.")
                 for user_id in bot.user_storage.read():
                     bot.general_logger.info(f"Notified: {user_id}")
                     bot.send_message(
                         user_id,
-                        f"✅ {current_time} - Івасюка 50А, світло увімкнули.",
+                        f"✅ {current_time} - Івасюка 50А, світло увімкнули. Світла не було {formatter.format(bot.last_power_on-bot.last_power_off)}",
                         parse_mode="html",
                     )
                 bot.general_logger.info(f"Users notified.")

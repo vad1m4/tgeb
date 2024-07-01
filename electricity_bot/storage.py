@@ -2,7 +2,7 @@ from pathlib import Path
 import json
 from abc import ABC, abstractmethod
 from typing import Iterable
-from electricity_bot.time import get_time, get_date, get_unix
+from electricity_bot.time import get_time, get_date, get_unix, unix_to_date
 
 
 class JSONStorage(ABC):
@@ -114,27 +114,32 @@ class JSONFileOutageStorage(JSONStorage):
         with open(self._jsonfile, "w", encoding="utf-8") as f:
             json.dump(outages, f, indent=4)
 
-    def save(self, outage_type: str, date: str = get_date()) -> None:
-        outages = self.read()
-        if outage_type == "start":
-            if "outages" in outages[date]:
-                outages[date]["outages"] += 1
-            else:
-                outages[date]["outages"] = 0
-        outages[date][len(outages[date])][outage_type] = get_unix
+    def save(self, power_off: int, power_on: int = get_unix()) -> None:
+        print(True)
+        date = unix_to_date(power_off)
+        general_outages = self.read()
+        if not date in general_outages.keys():
+            general_outages[date] = {"outages": 1}
+        else:
+            general_outages[date]["outages"] += 1
+        general_outages[date][general_outages[date]["outages"]] = {
+            "start": power_off,
+            "end": power_on,
+        }
+        self.write(general_outages)
 
-    def delete(self, outage: int) -> None:
+    def delete(self, outage: int = 1) -> None:
         outages = self.read()
         date = get_date()
         del outages[date][outage]
         self.write(outages)
 
-    def exists(self, outage: int = 0, date: str = get_date()) -> bool:
+    def exists(self, outage: int = 1, date: str = get_date()) -> bool:
         if outage in self.read()[date].keys():
             return True
         else:
             return False
 
-    def get_outage(self, outage: int = 0, date: str = get_date()) -> dict[str:int]:
+    def get_outage(self, outage: int = 1, date: str = get_date()) -> dict[str:int]:
         if self.exists(outage):
             return self.read()[date][outage]

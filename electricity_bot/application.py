@@ -1,6 +1,10 @@
 import telebot
 from telebot.types import Message
-from electricity_bot.storage import JSONFileUserStorage, JSONFileScheduleStorage
+from electricity_bot.storage import (
+    JSONFileUserStorage,
+    JSONFileScheduleStorage,
+    JSONFileOutageStorage,
+)
 from electricity_bot.exception_handler import TGEBExceptionHandler
 from electricity_bot.vars import subscribe_str, unsubscribe_str, state_str, schedule_str
 from electricity_bot.time import get_date, get_time
@@ -71,7 +75,7 @@ class Application(telebot.TeleBot):
             self.general_logger.init("Schedule storage", False)
             exit()
         try:
-            self.outages_storage = JSONFileScheduleStorage(Path.cwd() / "outages.json")
+            self.outages_storage = JSONFileOutageStorage(Path.cwd() / "outages.json")
             self.general_logger.init("Outages storage", True)
         except Exception as e:
             self.general_logger.init("Outages storage", False)
@@ -79,8 +83,11 @@ class Application(telebot.TeleBot):
 
         ### Electricity checker loop init
 
-        self._init_loop()
+        self.last_power_on = int
+        self.last_power_off = int
+
         self.state_v = bool
+        self._init_loop()
 
         ### Handle messages
 
