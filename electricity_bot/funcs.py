@@ -38,11 +38,9 @@ def loop(bot: TeleBot, run_event: Thread) -> None:
     bot.outage_logger.info(
         f"Electricity checker thread initialized. Initial state: {a.result['plugged']}"
     )
-    if bot.debug:
-        i = 0
+    i = 0
     while run_event.is_set():
-        if bot.debug:
-            i += 1
+        i += 1
         time.sleep(10)
         current_time = get_time()
         a = termux_api.battery_status()
