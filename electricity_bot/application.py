@@ -1,33 +1,48 @@
 import telebot
 from telebot.types import Message
-from electricity_bot.config import admins
 from electricity_bot.storage import JSONFileUserStorage, JSONFileScheduleStorage
 from electricity_bot.exception_handler import TGEBExceptionHandler
 from electricity_bot.vars import subscribe_str, unsubscribe_str, state_str, schedule_str
 from electricity_bot.time import get_date, get_time
 from electricity_bot.logger import TGEBLogger
 import electricity_bot.commands as commands
+from logging import INFO, DEBUG
 from pathlib import Path
 import threading
-from telebot import ExceptionHandler
 
 
 class Application(telebot.TeleBot):
-    def __init__(self, token) -> None:
+    def __init__(self, token: str, debug: bool = False, debug_termux: bool = False) -> None:
+
+        ### Loggers
+
+        self.debug = debug
+        self.debug_termux = debug_termux
+
+        if self.debug:
+            self.level = DEBUG
+        else:
+            self.level = INFO
+
         self.general_logger = TGEBLogger(
-            "General logger", f"general_logs/bot_{get_date()}_{get_time('-')}.txt", True
+            "General logger",
+            f"general_logs/bot_{get_date()}_{get_time('-')}.txt",
+            True,
+            self.level,
         )
 
         self.outage_logger = TGEBLogger(
             "Outage logger", f"outage_logs/bot_{get_date()}_{get_time('-')}.txt"
         )
-        self.general_logger.init("Outage logger", True)
+        self.general_logger.init("Outage logger", True, self.level)
 
         self.user_action_logger = TGEBLogger(
             "User action logger",
             f"user_action_logs/bot_{get_date()}_{get_time('-')}.txt",
         )
-        self.general_logger.init("User action logger", True)
+        self.general_logger.init("User action logger", True, self.level)
+
+        ### Telegram bot init
 
         exception_handler = TGEBExceptionHandler(self.general_logger)
 
@@ -37,6 +52,9 @@ class Application(telebot.TeleBot):
         except Exception as e:
             self.general_logger.init("Telegram bot", False)
             exit()
+
+        ### Storage init
+
         try:
             self.user_storage = JSONFileUserStorage(Path.cwd() / "users.json")
             self.general_logger.init("User storage", True)
@@ -50,9 +68,12 @@ class Application(telebot.TeleBot):
             self.general_logger.init("Schedule storage", False)
             exit()
 
-        self._init_loop()
+        ### Electricity checker loop init
 
+        self._init_loop()
         self.state_v = bool
+
+        ### Handle messages
 
         @self.message_handler(commands=["start"])
         def start(message: Message) -> None:
@@ -86,9 +107,9 @@ class Application(telebot.TeleBot):
         def handle_other(message: Message) -> None:
             commands.handle_other(message, self)
 
+    ### Electricity checker loop init
+
     def _init_loop(self):
-        # a = termux_api.battery_status()
-        # a.result['plugged']
         try:
             run_event = threading.Event()
             run_event.set()
@@ -104,8 +125,10 @@ class Application(telebot.TeleBot):
             self.general_logger.init("Electricity checker loop", False)
             exit()
 
+    ### Check if user_id is in self.admins
+
     def is_admin(self, message: Message) -> bool:
-        if not message.from_user.id in admins:
+        if not message.from_user.id in self.admins:
             return False
         else:
             return True

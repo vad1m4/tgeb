@@ -1,6 +1,11 @@
 deprecated-main.py
 electricity_bot/config.py
 electricity_bot/__pycache__
+electricity_bot/_termux_api.py
+general_logs
+outage_logs
+user_action_logs
 .venv
 users.json
 schedules.json
+temp.py
