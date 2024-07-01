@@ -2,7 +2,7 @@ from pathlib import Path
 import json
 from abc import ABC, abstractmethod
 from typing import Iterable
-from electricity_bot.time import get_time, get_date
+from electricity_bot.time import get_time, get_date, get_unix
 
 
 class JSONStorage(ABC):
@@ -114,25 +114,27 @@ class JSONFileOutageStorage(JSONStorage):
         with open(self._jsonfile, "w", encoding="utf-8") as f:
             json.dump(outages, f, indent=4)
 
-    def save(self, outage: dict, outage_type: str, date: str = get_date()) -> None:
+    def save(self, outage_type: str, date: str = get_date()) -> None:
         outages = self.read()
-        if "outages" in outage[date]:
-            outage[date]["outages"] = 0
-        else:
-            outage[date]["outages"] += 1
-        outage[date][len(outage[date])][outage_type] = 
+        if outage_type == "start":
+            if "outages" in outages[date]:
+                outages[date]["outages"] += 1
+            else:
+                outages[date]["outages"] = 0
+        outages[date][len(outages[date])][outage_type] = get_unix
 
-    def delete(self) -> None:
-        file_ids = self.read()
+    def delete(self, outage: int) -> None:
+        outages = self.read()
         date = get_date()
-        del file_ids[date]
-        self.write(file_ids)
+        del outages[date][outage]
+        self.write(outages)
 
-    def exists(self, date: str = get_date()) -> bool:
-        if date in self.read().keys():
+    def exists(self, outage: int = 0, date: str = get_date()) -> bool:
+        if outage in self.read()[date].keys():
             return True
         else:
             return False
 
-    def get_schedule(self, date: str = get_date()):
-        return self.read()[date]
+    def get_outage(self, outage: int = 0, date: str = get_date()) -> dict[str:int]:
+        if self.exists(outage):
+            return self.read()[date][outage]

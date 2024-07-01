@@ -6,13 +6,16 @@ from electricity_bot.vars import subscribe_str, unsubscribe_str, state_str, sche
 from electricity_bot.time import get_date, get_time
 from electricity_bot.logger import TGEBLogger
 import electricity_bot.commands as commands
+import electricity_bot.funcs as funcs
 from logging import INFO, DEBUG
 from pathlib import Path
 import threading
 
 
 class Application(telebot.TeleBot):
-    def __init__(self, token: str, debug: bool = False, debug_termux: bool = False) -> None:
+    def __init__(
+        self, token: str, debug: bool = False, debug_termux: bool = False
+    ) -> None:
 
         ### Loggers
 
@@ -67,6 +70,12 @@ class Application(telebot.TeleBot):
         except Exception as e:
             self.general_logger.init("Schedule storage", False)
             exit()
+        try:
+            self.outages_storage = JSONFileScheduleStorage(Path.cwd() / "outages.json")
+            self.general_logger.init("Outages storage", True)
+        except Exception as e:
+            self.general_logger.init("Outages storage", False)
+            exit()
 
         ### Electricity checker loop init
 
@@ -114,7 +123,7 @@ class Application(telebot.TeleBot):
             run_event = threading.Event()
             run_event.set()
             t = threading.Thread(
-                target=commands.loop,
+                target=funcs.loop,
                 args=(
                     self,
                     run_event,

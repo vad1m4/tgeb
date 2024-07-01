@@ -8,4 +8,6 @@ user_action_logs
 .venv
 users.json
 schedules.json
+outages.json
 temp.py
+outages.json
