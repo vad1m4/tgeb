@@ -1,4 +1,4 @@
-from datetime import datetime
+import datetime
 import time
 import pytz
 
@@ -6,7 +6,7 @@ tz = pytz.timezone("Europe/Kiev")
 
 
 def get_date():
-    current_datetime = datetime.now()
+    current_datetime = datetime.datetime.now()
     date = current_datetime.strftime("%d-%m-%Y")
     return date
 
@@ -18,14 +18,15 @@ def get_time(hyphen_type: str = ":") -> str:
 
 
 def unix_to_date(date_unix: int) -> time.struct_time:
-    return datetime.fromtimestamp(date_unix, tz).strftime("%Y-%m-%d")
+    return datetime.datetime.fromtimestamp(date_unix, tz).strftime("%Y-%m-%d")
 
 
 def unix_to_time(date_unix: int) -> time.struct_time:
-    return datetime.fromtimestamp(date_unix, tz).strftime("%H:%M:%S")
+    return datetime.datetime.fromtimestamp(date_unix, tz).strftime("%H:%M:%S")
+
 
 def seconds_to_time(seconds: int):
-    
+    return str(datetime.timedelta(seconds=seconds))
 
 
 def get_unix() -> int:

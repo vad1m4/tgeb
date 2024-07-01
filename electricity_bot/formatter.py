@@ -1,22 +1,36 @@
-from electricity_bot.time import unix_to_time
+from electricity_bot.time import seconds_to_time
+
+
+def format_text(time: int, measurement: str) -> str:
+    if (time % 10) == 1:
+        measurement += "у"
+    if (time % 10) > 1 and (time % 10) < 5 and time > 20:
+        measurement += "и"
+    return measurement
+        
 
 
 def format(unix: int) -> str:
-    print(unix_to_time(unix))
-    print(unix)
-    hours, minutes, seconds = unix_to_time(unix).split(":")
+    hours, minutes, seconds = seconds_to_time(unix).split(":")
     hours = int(hours)
     minutes = int(minutes)
     seconds = int(seconds)
-    if hours > 0 and minutes > 0 and seconds > 0:
-        return f"{hours} годин(-и), {minutes} хвилин й {seconds} секунд"
-    if hours > 0 and minutes > 0:
-        return f"{hours} годин(-и) й {minutes} хвилин"
+
+    components = []
+        
     if hours > 0:
-        return f"{hours} годин(-и)"
-    if minutes > 0 and seconds > 0:
-        return f"{minutes} хвилин й {seconds} секунд"
+        components.append(f"{hours} {format_text(hours, "годин")}")
+    
     if minutes > 0:
-        return f"{minutes} хвилин"
+        components.append(f"{minutes} {format_text(minutes, "хвилин")}")
+    
     if seconds > 0:
-        return f"{seconds} секунд"
+        components.append(f"{seconds} {format_text(seconds, "секунд")}")
+    
+    if len(components) == 1:
+        return components[0]
+    else:
+        return ", ".join(components[:-1]) + f" й {components[-1]}"
+    
+
+

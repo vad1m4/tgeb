@@ -57,7 +57,7 @@ def loop(bot: TeleBot, run_event: Thread) -> None:
                     bot.general_logger.info(f"Notified: {user_id}")
                     bot.send_message(
                         user_id,
-                        f"❌ {current_time} - {ADDRESS}, світло вимкнули. Світла було {formatter.format(bot.last_power_off-bot.last_power_on)}",
+                        f"❌ {current_time} - {ADDRESS}, світло вимкнули. Світло було {formatter.format(bot.last_power_off-bot.last_power_on)}",
                         parse_mode="html",
                     )
                 bot.general_logger.info(f"Users notified.")
