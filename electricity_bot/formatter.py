@@ -29,4 +29,4 @@ def format(unix: int) -> str:
     if len(components) == 1:
         return components[0]
     else:
-        return ", ".join(components[:-1]) + f" й {components[-1]}"
+        return str(", ".join(components[:-1]) + f" й {components[-1]}")
