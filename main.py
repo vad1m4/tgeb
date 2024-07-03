@@ -18,7 +18,7 @@ if "--debug-termux" in sys.argv or "--dt" in sys.argv:
 
 def main() -> None:
     app = Application(token, debug, debug_termux)
-    app.polling(none_stop=True)
+    app.infinity_polling()
 
 
 if __name__ == "__main__":

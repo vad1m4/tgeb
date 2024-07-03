@@ -6,7 +6,15 @@ from electricity_bot.storage import (
     JSONFileOutageStorage,
 )
 from electricity_bot.exception_handler import TGEBExceptionHandler
-from electricity_bot.vars import subscribe_str, unsubscribe_str, state_str, schedule_str
+from electricity_bot.vars import (
+    subscribe_str,
+    unsubscribe_str,
+    state_str,
+    schedule_str,
+    unsubscribe_stats_str,
+    subscribe_stats_str,
+    notifications_str,
+)
 from electricity_bot.time import get_date, get_time
 from electricity_bot.logger import TGEBLogger
 from electricity_bot.config import admins
@@ -15,6 +23,7 @@ import electricity_bot.funcs as funcs
 from logging import INFO, DEBUG
 from pathlib import Path
 import threading
+import schedule
 
 
 class Application(telebot.TeleBot):
@@ -87,8 +96,13 @@ class Application(telebot.TeleBot):
         self.last_power_on = int
         self.last_power_off = int
 
+        self.last_power_on_local = int
+        self.last_power_off_local = int
+
         self.state_v = bool
         self._init_loop()
+
+        self._init_schedule()
 
         ### Handle messages
 
@@ -106,6 +120,21 @@ class Application(telebot.TeleBot):
         def unsubscribe(message: Message) -> None:
             commands.unsubscribe(message, self)
 
+        @self.message_handler(regexp=subscribe_stats_str)
+        @self.message_handler(commands=["subscribestats"])
+        def subscribe(message: Message) -> None:
+            commands.subscribe_stats(message, self)
+
+        @self.message_handler(regexp=unsubscribe_stats_str)
+        @self.message_handler(commands=["unsubscribestats"])
+        def unsubscribe(message: Message) -> None:
+            commands.unsubscribe_stats(message, self)
+
+        @self.message_handler(regexp=notifications_str)
+        @self.message_handler(commands=["notifications"])
+        def unsubscribe(message: Message) -> None:
+            commands.notifications(message, self)
+
         @self.message_handler(regexp=state_str)
         @self.message_handler(commands=["electricitystate"])
         def state(message: Message) -> None:
@@ -120,6 +149,19 @@ class Application(telebot.TeleBot):
         def schedule(message: Message) -> None:
             commands.add_schedule(message, self, False)
 
+        @self.message_handler(commands=["currentdate"])
+        def current_date(message: Message) -> None:
+            commands.current_date(message, self)
+
+        @self.message_handler(commands=["stats"])
+        def current_date(message: Message) -> None:
+            if self.is_admin(message.from_user.id):
+                funcs.stats(message, self)
+
+        @self.message_handler(regexp="Назад")
+        def handle_other(message: Message) -> None:
+            funcs.generic(message, self)
+
         @self.message_handler(func=lambda message: True)
         def handle_other(message: Message) -> None:
             commands.handle_other(message, self)
@@ -131,7 +173,7 @@ class Application(telebot.TeleBot):
             run_event = threading.Event()
             run_event.set()
             t = threading.Thread(
-                target=funcs.loop,
+                target=funcs.termux_loop,
                 args=(
                     self,
                     run_event,
@@ -140,6 +182,25 @@ class Application(telebot.TeleBot):
             t.start()
         except Exception as e:
             self.general_logger.init("Electricity checker loop", False)
+            exit()
+
+    def _init_schedule(self):
+
+        schedule.every().day.at("00:00", "Europe/Kiev").do(funcs.job, self)
+
+        try:
+            run_event = threading.Event()
+            run_event.set()
+            t = threading.Thread(
+                target=funcs.schedule_loop,
+                args=(
+                    self,
+                    run_event,
+                ),
+            )
+            t.start()
+        except Exception as e:
+            self.general_logger.init("Schedule loop", False)
             exit()
 
     ### Check if user_id is in self.admins

@@ -1,6 +1,10 @@
-
 from electricity_bot.config import ADDRESS
-from electricity_bot.vars import generic_markup, cancel, generic_choice
+from electricity_bot.vars import (
+    generic_markup,
+    cancel,
+    generic_choice,
+    notifications_markup,
+)
 from electricity_bot.time import get_date, get_time
 from electricity_bot.funcs import handle_photos, do_update_schedule
 from telebot import TeleBot, types
@@ -36,39 +40,97 @@ def handle_other(message: types.Message, bot: TeleBot) -> None:
 
 def subscribe(message: types.Message, bot: TeleBot) -> None:
     bot.user_action_logger.cmd(message, "subscribe")
-    if not bot.user_storage.subscribed(message.from_user.id):
+    if not bot.user_storage.subscribed(message.from_user.id, "outages"):
+        bot.user_storage.save(message.chat.id, "outages")
+        markup = notifications_markup(bot, message.from_user.id)
         bot.send_message(
             message.chat.id,
             "🔔 Ви <b>успішно</b> підписалися на сповіщення!",
             parse_mode="html",
-            reply_markup=generic_markup,
+            reply_markup=markup,
         )
-        bot.user_storage.save(message.chat.id)
     else:
+        markup = notifications_markup(bot, message.from_user.id)
         bot.send_message(
             message.chat.id,
             "🔔 Ви <b>вже</b> підписані на сповіщення.",
             parse_mode="html",
-            reply_markup=generic_markup,
+            reply_markup=markup,
         )
+
+
+def notifications(message: types.Message, bot: TeleBot) -> None:
+    bot.user_action_logger.cmd(message, "notifications")
+    markup = notifications_markup(bot, message.from_user.id)
+    bot.send_message(
+        message.chat.id,
+        f"Ось перелік ваших налаштувань:\n\nВи {'підписані' if bot.user_storage.subscribed(message.from_user.id, 'outages') else 'не підписані'} на сповіщення.\n\nВи {'підписані' if bot.user_storage.subscribed(message.from_user.id, 'stats') else 'не підписані'} на щоденну статистику.",
+        parse_mode="html",
+        reply_markup=markup,
+    )
 
 
 def unsubscribe(message: types.Message, bot: TeleBot) -> None:
     bot.user_action_logger.cmd(message, "unsubscribe")
-    if bot.user_storage.subscribed(message.from_user.id):
-        bot.user_storage.delete(message.from_user.id)
+    if bot.user_storage.subscribed(message.from_user.id, "outages"):
+        bot.user_storage.delete(message.from_user.id, "outages")
+        markup = notifications_markup(bot, message.from_user.id)
         bot.send_message(
             message.chat.id,
             "🔕 Ви <b>успішно</b> відписалися від сповіщень!",
             parse_mode="html",
-            reply_markup=generic_markup,
+            reply_markup=markup,
         )
     else:
+        markup = notifications_markup(bot, message.from_user.id)
         bot.send_message(
             message.chat.id,
             "🔕 Ви <b>не</b> підписані на сповіщення.",
             parse_mode="html",
-            reply_markup=generic_markup,
+            reply_markup=markup,
+        )
+
+
+def subscribe_stats(message: types.Message, bot: TeleBot) -> None:
+    bot.user_action_logger.cmd(message, "subscribe_stats")
+    if not bot.user_storage.subscribed(message.from_user.id, "stats"):
+        bot.user_storage.save(message.chat.id, "stats")
+        markup = notifications_markup(bot, message.from_user.id)
+        bot.send_message(
+            message.chat.id,
+            "🔔 Ви <b>успішно</b> підписалися на щоденну статистику!",
+            parse_mode="html",
+            reply_markup=markup,
+        )
+    else:
+        markup = notifications_markup(bot, message.from_user.id)
+        bot.send_message(
+            message.chat.id,
+            "🔔 Ви <b>вже</b> підписані на щоденну статистику.",
+            parse_mode="html",
+            reply_markup=markup,
+        )
+
+
+def unsubscribe_stats(message: types.Message, bot: TeleBot) -> None:
+    markup = notifications_markup(bot, message.from_user.id)
+    bot.user_action_logger.cmd(message, "unsubscribe_stats")
+    if bot.user_storage.subscribed(message.from_user.id, "stats"):
+        bot.user_storage.delete(message.from_user.id, "stats")
+        markup = notifications_markup(bot, message.from_user.id)
+        bot.send_message(
+            message.chat.id,
+            "🔕 Ви <b>успішно</b> відписалися від щоденної статистики!",
+            parse_mode="html",
+            reply_markup=markup,
+        )
+    else:
+        markup = notifications_markup(bot, message.from_user.id)
+        bot.send_message(
+            message.chat.id,
+            "🔕 Ви <b>не</b> підписані на щоденну статистику.",
+            parse_mode="html",
+            reply_markup=markup,
         )
 
 
@@ -150,6 +212,23 @@ def add_schedule(
                     reply_markup=cancel,
                 )
                 bot.register_next_step_handler(message, handle_photos, bot, generic)
+    else:
+        bot.send_message(
+            message.chat.id,
+            f"❌ Ви не є адміном цього бота.",
+            parse_mode="html",
+            reply_markup=generic_markup,
+        )
+
+
+def current_date(message: types.Message, bot: TeleBot):
+    if bot.is_admin(message):
+        bot.send_message(
+            message.chat.id,
+            f"Сьогоднішня дата: {get_date()} {get_time()}",
+            parse_mode="html",
+            reply_markup=generic_markup,
+        )
     else:
         bot.send_message(
             message.chat.id,

@@ -1,18 +1,36 @@
-from telebot import types
+from telebot import types, TeleBot
 from electricity_bot.config import GROUP
-from datetime import datetime
 
 subscribe_str = "Підписатися на сповіщення"
 unsubscribe_str = "Відписатися від сповіщень"
+subscribe_stats_str = "Підписатися на щоденну статистику"
+unsubscribe_stats_str = "Відписатися від щоденної статистики"
+
+
 state_str = "Який стан світла?"
 schedule_str = f"Графік відключень групи {GROUP}"
+notifications_str = "Сповіщення"
 
 generic_markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
-subscribe = types.KeyboardButton(subscribe_str)
-unsubscribe = types.KeyboardButton(unsubscribe_str)
+notifications = types.KeyboardButton(notifications_str)
 state = types.KeyboardButton(state_str)
 schedule = types.KeyboardButton(schedule_str)
-generic_markup.add(subscribe, unsubscribe, state, schedule)
+generic_markup.add(state, notifications, schedule)
+
+
+def notifications_markup(bot: TeleBot, user_id: int) -> types.ReplyKeyboardMarkup:
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
+    if not bot.user_storage.subscribed(user_id, "outages"):
+        generic = types.KeyboardButton(str(subscribe_str))
+    else:
+        generic = types.KeyboardButton(str(unsubscribe_str))
+    if not bot.user_storage.subscribed(user_id, "stats"):
+        stats = types.KeyboardButton(str(subscribe_stats_str))
+    else:
+        stats = types.KeyboardButton(str(unsubscribe_stats_str))
+
+    return markup.add(generic, stats, cancel_b)
+
 
 none = types.ReplyKeyboardRemove()
 

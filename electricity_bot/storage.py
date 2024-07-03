@@ -26,32 +26,31 @@ class JSONFileUserStorage(JSONStorage):
 
     def _init_storage(self) -> None:
         if not self._jsonfile.exists():
-            self._jsonfile.write_text('{"subscribed_users": []}')
+            self._jsonfile.write_text('{"outages": [], "stats": []}')
 
     def read(self) -> list[int]:
         with open(self._jsonfile, "r", encoding="utf-8") as f:
             data = json.load(f)
-            return data["subscribed_users"]
+            return data
 
-    def write(self, users_l: list[int]) -> None:
+    def write(self, users_d: dict[str:int]) -> None:
         with open(self._jsonfile, "w", encoding="utf-8") as f:
-            users = {"subscribed_users": users_l}
-            json.dump(users, f, indent=4)
+            json.dump(users_d, f, indent=4)
 
-    def save(self, user_id: int) -> None:
-        if not self.subscribed(user_id):
+    def save(self, user_id: int, _type: str) -> None:
+        if not self.subscribed(user_id, _type):
             users = self.read()
-            users.append(user_id)
+            users[_type].append(user_id)
             self.write(users)
 
-    def delete(self, user_id: int) -> None:
+    def delete(self, user_id: int, _type: str) -> None:
         users = self.read()
-        if self.subscribed(user_id):
-            users.remove(user_id)
+        if self.subscribed(user_id, _type):
+            users[_type].remove(user_id)
         self.write(users)
 
-    def subscribed(self, user_id: int) -> bool:
-        if user_id in self.read():
+    def subscribed(self, user_id: int, _type: str) -> bool:
+        if user_id in self.read()[_type]:
             return True
         else:
             return False
@@ -115,7 +114,6 @@ class JSONFileOutageStorage(JSONStorage):
             json.dump(outages, f, indent=4)
 
     def save(self, power_off: int, power_on: int = get_unix()) -> None:
-        print(True)
         date = unix_to_date(power_off)
         general_outages = self.read()
         if not date in general_outages.keys():
@@ -135,7 +133,7 @@ class JSONFileOutageStorage(JSONStorage):
         self.write(outages)
 
     def exists(self, outage: int = 1, date: str = get_date()) -> bool:
-        if outage in self.read()[date].keys():
+        if str(outage) in self.read()[date].keys():
             return True
         else:
             return False
@@ -143,3 +141,8 @@ class JSONFileOutageStorage(JSONStorage):
     def get_outage(self, outage: int = 1, date: str = get_date()) -> dict[str:int]:
         if self.exists(outage):
             return self.read()[date][outage]
+
+    def lasted(self, outage: int = 1, date: str = get_date()) -> int:
+        if self.exists(outage):
+            data = self.read()
+            return int(data[date][str(outage)]["end"] - data[date][outage]["start"])
