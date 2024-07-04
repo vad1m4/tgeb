@@ -79,13 +79,19 @@ def termux_loop(bot: TeleBot, run_event: Event) -> None:
                 bot.outages_storage.save(bot.last_power_off_local, bot.last_power_on)
                 bot.general_logger.info(f"Electricity is back on. Notifying users.")
                 bot.outage_logger.warning(f"Electricity is back on.")
-                for user_id in bot.user_storage.read()["outages"]:
-                    bot.general_logger.info(f"Notified: {user_id}")
-                    bot.send_message(
-                        user_id,
-                        f"✅ {current_time} - Івасюка 50А, світло увімкнули. Світла не було {formatter.format(bot.last_power_on-bot.last_power_off)}",
-                        parse_mode="html",
+                try:
+                    for user_id in bot.user_storage.read()["outages"]:
+                        bot.general_logger.info(f"Notified: {user_id}")
+                        bot.send_message(
+                            user_id,
+                            f"✅ {current_time} - Івасюка 50А, світло увімкнули. Світла не було {formatter.format(bot.last_power_on-bot.last_power_off)}",
+                            parse_mode="html",
+                        )
+                except Exception as e:
+                    bot.general_logger.error(
+                        f"{e} occured. Take actions regarding this error as soon as possible."
                     )
+                    continue
                 bot.general_logger.info(f"Users notified.")
             else:
                 continue
