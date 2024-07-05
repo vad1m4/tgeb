@@ -178,7 +178,7 @@ def schedule_loop(bot: TeleBot, run_event: Event) -> None:
         time.sleep(1)
 
 
-def stats(bot: TeleBot, date: str = get_date()) -> None:
+def stats(bot: TeleBot, date: str = get_date(-1)) -> None:
     data = bot.outages_storage.read()
     if date in data.keys():
         total = 0
@@ -191,7 +191,7 @@ def stats(bot: TeleBot, date: str = get_date()) -> None:
         bot.general_logger.info(f"Notified: {user_id}")
         bot.send_message(
             user_id,
-            f"💡 Статистика відключень за {get_date()}: \n\nКількість відключень: {count}\n\nЗагалом світла не було {formatter.format(total)}, що складає {round((total/86400)*100, 1)}% доби",
+            f"💡 Статистика відключень за {get_date(-1)}: \n\nКількість відключень: {count}\n\nЗагалом світла не було {formatter.format(total)}, що складає {round((total/86400)*100, 1)}% доби",
             parse_mode="html",
             reply_markup=generic_markup,
         )
