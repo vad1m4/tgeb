@@ -3,9 +3,11 @@ from electricity_bot.vars import generic_choice, generic_markup, cancel
 from electricity_bot.config import ADDRESS
 from electricity_bot.time import get_time, get_unix, get_date
 import electricity_bot.formatter as formatter
+from electricity_bot.image_scraper import TGEBImageScraper
 from threading import Event
 import time
 import schedule
+
 
 # from application import Application
 
@@ -163,12 +165,15 @@ def handle_photos(
             bot.register_next_step_handler(message, handle_photos, bot)
 
 
-def job(bot: TeleBot) -> None:
+def stats_job(bot: TeleBot) -> None:
     if not bot.state_v:
         bot.last_power_on_local = get_unix()
         bot.last_power_off_local = get_unix()
         bot.outages_storage.save(bot.last_power_off, bot.last_power_on_local)
     stats(bot, get_date(-1))
+
+
+def scrape_job(bot: TeleBot) -> None: ...
 
 
 def schedule_loop(bot: TeleBot, run_event: Event) -> None:
