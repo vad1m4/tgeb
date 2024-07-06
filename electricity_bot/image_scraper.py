@@ -16,7 +16,9 @@ class TGEBImageScraper:
         self.url = url
 
     def scrape_images(self) -> list[str]:
-        self.driver = webdriver.Chrome(options=self.chrome_options)
+        self.driver = webdriver.Chrome(
+            options=self.chrome_options, executable_path="/usr/bin/"
+        )
         self.driver.get(self.url)
         time.sleep(5)
         page_source = self.driver.page_source
