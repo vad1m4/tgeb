@@ -16,7 +16,7 @@ pkg install python
 ```
 Clone this repository:
 ```bash
-git clone https://github.com/vad1m4/tg_electricity_bot_oop.git
+git clone https://github.com/vad1m4/tgeb.git
 ```
 Install the requirements:
 ```bash
