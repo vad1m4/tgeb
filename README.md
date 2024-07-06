@@ -32,12 +32,12 @@ nano electricity_bot/config.py
 ```
 Now that you're inside the editor, write the following piece of code, replacing placeholders with your info:
 ```py
-GROUP = "(your group here)"
-ADDRESS = "(your address here)"
-TOKEN = "(your stable telegram bot token)"
-TOKEN_DEBUG = "(optional: your debug telegram bot token)"
+GROUP = "" your group here
+ADDRESS = "" # your address here
+TOKEN = "" # your stable telegram bot token
+TOKEN_DEBUG = "" # optional: your debug telegram bot token
 
-admins = ["your admins' user_ids here"]
+admins = [] # put your admins' user_ids here as integers
 ```
 
 After this, run `python main.py` to start the script 
