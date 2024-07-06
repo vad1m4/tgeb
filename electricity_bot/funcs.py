@@ -7,6 +7,7 @@ from threading import Event
 import time
 import schedule
 
+
 # from application import Application
 
 
@@ -107,10 +108,34 @@ def generic(message: types.Message, bot: TeleBot) -> None:
     )
 
 
-def do_update_schedule(
+def add_schedule(
     message: types.Message,
     bot: TeleBot,
 ):
+    if message.text == "Назад":
+        generic(message, bot)
+    else:
+        if bot.id_storage.exists(message.text):
+            bot.send_message(
+                message.chat.id,
+                f"Цей графік вже було додано. Оновити його?",
+                parse_mode="html",
+                reply_markup=generic_choice,
+            )
+            bot.register_next_step_handler(
+                message, do_update_schedule, bot, message.text
+            )
+        else:
+            bot.send_message(
+                message.chat.id,
+                f"Надішліть фотографію графіку.",
+                parse_mode="html",
+                reply_markup=cancel,
+            )
+            bot.register_next_step_handler(message, handle_photos, bot, message.text)
+
+
+def do_update_schedule(message: types.Message, bot: TeleBot, date: str = get_date()):
     if message.text == "Назад":
         generic(message, bot)
     elif message.text == "Так":
@@ -120,7 +145,7 @@ def do_update_schedule(
             parse_mode="html",
             reply_markup=cancel,
         )
-        bot.register_next_step_handler(message, handle_photos, bot, False)
+        bot.register_next_step_handler(message, handle_photos, bot, date, False)
 
     elif message.text == "Ні":
         generic(message, bot)
@@ -136,12 +161,12 @@ def do_update_schedule(
 def handle_photos(
     message: types.Message,
     bot: TeleBot,
-    is_generic: bool = False,
+    date: str = get_date(),
 ) -> None:
     bot.user_action_logger.cmd(message, "handle_photos")
     if message.content_type == "photo":
         file_id = message.photo[-1].file_id
-        bot.id_storage.save(file_id)
+        bot.id_storage.save(file_id, date)
 
         bot.send_message(
             message.chat.id,
@@ -163,12 +188,47 @@ def handle_photos(
             bot.register_next_step_handler(message, handle_photos, bot)
 
 
-def job(bot: TeleBot) -> None:
+def stats_job(bot: TeleBot) -> None:
     if not bot.state_v:
         bot.last_power_on_local = get_unix()
         bot.last_power_off_local = get_unix()
         bot.outages_storage.save(bot.last_power_off, bot.last_power_on_local)
     stats(bot, get_date(-1))
+
+
+def scrape_job(
+    bot: TeleBot, date: str = get_date(1), user_id: int = None, is_manual: bool = False
+) -> None:
+    bot.general_logger.info(f"Scraping images from {bot.image_scraper.url}.")
+    if is_manual:
+        bot.send_message(
+            user_id,
+            f"Scraping images from {bot.image_scraper.url}.",
+            parse_mode="html",
+        )
+    images = bot.image_scraper.scrape_images()
+    if len(images) > 0:
+        try:
+            image = bot.image_scraper.scrape_images()[0]
+            bot.id_storage.save(image, date)
+            bot.general_logger.info("Schedule image scraped successfully.")
+            if is_manual:
+                bot.send_message(
+                    user_id,
+                    "Schedule image scraped successfully.",
+                )
+        except Exception as e:
+            bot.general_logger.error(
+                f"{e} occured. Take actions regarding this error as soon as possible."
+            )
+            if is_manual:
+                bot.send_message(
+                    user_id,
+                    f"{e} occured. Take actions regarding this error as soon as possible.",
+                )
+
+    else:
+        bot.general_logger.error("Could not scrape images.")
 
 
 def schedule_loop(bot: TeleBot, run_event: Event) -> None:

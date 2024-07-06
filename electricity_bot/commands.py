@@ -4,9 +4,11 @@ from electricity_bot.vars import (
     cancel,
     generic_choice,
     notifications_markup,
+    schedules_markup,
 )
 from electricity_bot.time import get_date, get_time
 from electricity_bot.funcs import handle_photos, do_update_schedule
+from electricity_bot.funcs import add_schedule as _add_schedule
 from telebot import TeleBot, types
 
 
@@ -183,42 +185,26 @@ def see_schedule(message: types.Message, bot: TeleBot) -> None:
 def add_schedule(
     message: types.Message,
     bot: TeleBot,
-    generic: bool,
+    generic: bool = False,
 ) -> None:
     bot.user_action_logger.cmd(message, "add_schedule")
-    if bot.is_admin(message):
-        if generic:
-            bot.send_message(
-                message.chat.id,
-                f"Надішліть фотографію графіку.",
-                parse_mode="html",
-                reply_markup=cancel,
-            )
-            bot.register_next_step_handler(message, handle_photos, bot, generic)
-        else:
-            if bot.id_storage.exists():
-                bot.send_message(
-                    message.chat.id,
-                    f"Графік за сьогодні вже було додано. Оновити його?",
-                    parse_mode="html",
-                    reply_markup=generic_choice,
-                )
-                bot.register_next_step_handler(message, do_update_schedule, bot)
-            else:
-                bot.send_message(
-                    message.chat.id,
-                    f"Надішліть фотографію графіку.",
-                    parse_mode="html",
-                    reply_markup=cancel,
-                )
-                bot.register_next_step_handler(message, handle_photos, bot, generic)
-    else:
+    if generic:
         bot.send_message(
             message.chat.id,
-            f"❌ Ви не є адміном цього бота.",
+            f"Надішліть фотографію графіку.",
             parse_mode="html",
-            reply_markup=generic_markup,
+            reply_markup=cancel,
         )
+        bot.register_next_step_handler(message, handle_photos, bot, generic)
+    else:
+        markup = schedules_markup(bot)
+        bot.send_message(
+            message.chat.id,
+            f"Оберіть дату.",
+            parse_mode="html",
+            reply_markup=markup,
+        )
+        bot.register_next_step_handler(message, _add_schedule, bot)
 
 
 def current_date(message: types.Message, bot: TeleBot):

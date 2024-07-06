@@ -20,6 +20,7 @@ from electricity_bot.logger import TGEBLogger
 from electricity_bot.config import admins
 import electricity_bot.commands as commands
 import electricity_bot.funcs as funcs
+from electricity_bot.image_scraper import TGEBImageScraper
 from logging import INFO, DEBUG
 from pathlib import Path
 import threading
@@ -67,7 +68,7 @@ class Application(telebot.TeleBot):
             super().__init__(token, exception_handler=exception_handler)
             self.general_logger.init("Telegram bot", True)
         except Exception as e:
-            self.general_logger.init("Telegram bot", False)
+            self.general_logger.init("Telegram bot", False, e)
             exit()
 
         ### Storage init
@@ -76,19 +77,19 @@ class Application(telebot.TeleBot):
             self.user_storage = JSONFileUserStorage(Path.cwd() / "users.json")
             self.general_logger.init("User storage", True)
         except Exception as e:
-            self.general_logger.init("User storage", False)
+            self.general_logger.init("User storage", False, e)
             exit()
         try:
             self.id_storage = JSONFileScheduleStorage(Path.cwd() / "schedules.json")
             self.general_logger.init("Schedule storage", True)
         except Exception as e:
-            self.general_logger.init("Schedule storage", False)
+            self.general_logger.init("Schedule storage", False, e)
             exit()
         try:
             self.outages_storage = JSONFileOutageStorage(Path.cwd() / "outages.json")
             self.general_logger.init("Outages storage", True)
         except Exception as e:
-            self.general_logger.init("Outages storage", False)
+            self.general_logger.init("Outages storage", False, e)
             exit()
 
         ### Electricity checker loop init
@@ -101,6 +102,15 @@ class Application(telebot.TeleBot):
 
         self.state_v = bool
         self._init_loop()
+
+        try:
+            self.image_scraper = TGEBImageScraper(
+                self.general_logger, "https://poweron.loe.lviv.ua/"
+            )
+            self.general_logger.init("Image scraper", True)
+        except Exception as e:
+            self.general_logger.init("Image scraper", False, e)
+            exit()
 
         self._init_schedule()
 
@@ -146,8 +156,14 @@ class Application(telebot.TeleBot):
             commands.see_schedule(message, self)
 
         @self.message_handler(commands=["addschedule"])
-        def schedule(message: Message) -> None:
-            commands.add_schedule(message, self, False)
+        def addschedule(message: Message) -> None:
+            if self.is_admin(message):
+                commands.add_schedule(message, self)
+
+        @self.message_handler(commands=["scrape"])
+        def scrape(message: Message) -> None:
+            if self.is_admin(message):
+                funcs.scrape_job(self, get_date(), message.from_user.id, True)
 
         @self.message_handler(commands=["currentdate"])
         def current_date(message: Message) -> None:
@@ -186,7 +202,9 @@ class Application(telebot.TeleBot):
 
     def _init_schedule(self):
 
-        schedule.every().day.at("00:00", "Europe/Kiev").do(funcs.job, self)
+        schedule.every().day.at("00:00", "Europe/Kiev").do(funcs.stats_job, self)
+
+        schedule.every().day.at("20:00", "Europe/Kiev").do(funcs.scrape_job, self)
 
         try:
             run_event = threading.Event()

@@ -1,5 +1,6 @@
 from telebot import types, TeleBot
 from electricity_bot.config import GROUP
+from electricity_bot.time import get_date
 
 subscribe_str = "Підписатися на сповіщення"
 unsubscribe_str = "Відписатися від сповіщень"
@@ -30,6 +31,15 @@ def notifications_markup(bot: TeleBot, user_id: int) -> types.ReplyKeyboardMarku
         stats = types.KeyboardButton(str(unsubscribe_stats_str))
 
     return markup.add(generic, stats, cancel_b)
+
+
+def schedules_markup(bot: TeleBot) -> types.ReplyKeyboardMarkup:
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=3)
+    today = types.KeyboardButton(str(get_date()))
+    tomorrow = types.KeyboardButton(str(get_date(1)))
+    generic = types.KeyboardButton("generic")
+
+    return markup.add(today, tomorrow, generic)
 
 
 none = types.ReplyKeyboardRemove()
