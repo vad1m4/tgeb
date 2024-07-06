@@ -32,7 +32,7 @@ nano electricity_bot/config.py
 ```
 Now that you're inside the editor, write the following piece of code, replacing placeholders with your info:
 ```py
-GROUP = "" your group here
+GROUP = "" # your group here
 ADDRESS = "" # your address here
 TOKEN = "" # your stable telegram bot token
 TOKEN_DEBUG = "" # optional: your debug telegram bot token
