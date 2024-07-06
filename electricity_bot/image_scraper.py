@@ -4,22 +4,19 @@ from bs4 import BeautifulSoup
 import time
 import logging
 
-logger = logging.getLogger("General logger")
-
 
 class TGEBImageScraper:
-    def __init__(self, url: str):
-        logger.init("Image scraper", True)
+    def __init__(self, _logger: logging.Logger, url: str) -> None:
+        self.logger = _logger
         self.chrome_options = Options()
         self.chrome_options.add_argument("--headless")
         self.chrome_options.add_argument("--no-sandbox")
         self.chrome_options.add_argument("--disable-dev-shm-usage")
 
-        self.driver = webdriver.Chrome(options=self.chrome_options)
-
         self.url = url
 
-    def scrape_images(self):
+    def scrape_images(self) -> list[str]:
+        self.driver = webdriver.Chrome(options=self.chrome_options)
         self.driver.get(self.url)
         time.sleep(5)
         page_source = self.driver.page_source
@@ -40,5 +37,5 @@ class TGEBImageScraper:
                         src = img.get("src")
                         if src:
                             image_urls.append(src)
-        logger.info(f"Found {len(image_urls)} image URLs")
+        self.logger.info(f"Found {len(image_urls)} image URLs")
         return image_urls
