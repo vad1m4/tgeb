@@ -1,5 +1,6 @@
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
 from bs4 import BeautifulSoup
 import time
 import logging
@@ -12,12 +13,13 @@ class TGEBImageScraper:
         self.chrome_options.add_argument("--headless")
         self.chrome_options.add_argument("--no-sandbox")
         self.chrome_options.add_argument("--disable-dev-shm-usage")
+        self.service = Service(executable_path="/usr/bin/")
 
         self.url = url
 
     def scrape_images(self) -> list[str]:
         self.driver = webdriver.Chrome(
-            options=self.chrome_options, executable_path="/usr/bin/"
+            options=self.chrome_options, service=self.service
         )
         self.driver.get(self.url)
         time.sleep(5)
