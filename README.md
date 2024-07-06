@@ -51,7 +51,7 @@ To do that, run the bot with the following parameters:
 
 `--dt` or `--debug-termux` to use a function that imitates termux (useful when you're coding from your desktop computer).
 
-## Warnings
+## Cautions
 
 Do not distribute the bot's username to people that you don't know or don't trust. Since this bot uses your address to notify people, everybody who subscribes to it will know your address. Ideally, you should only share it with your neighbours.
 
