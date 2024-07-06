@@ -118,7 +118,7 @@ def add_schedule(
         if bot.id_storage.exists(message.text):
             bot.send_message(
                 message.chat.id,
-                f"Графік за цю дату вже було додано. Оновити його?",
+                f"Цей графік вже було додано. Оновити його?",
                 parse_mode="html",
                 reply_markup=generic_choice,
             )
@@ -162,7 +162,6 @@ def handle_photos(
     message: types.Message,
     bot: TeleBot,
     date: str = get_date(),
-    is_generic: bool = False,
 ) -> None:
     bot.user_action_logger.cmd(message, "handle_photos")
     if message.content_type == "photo":
