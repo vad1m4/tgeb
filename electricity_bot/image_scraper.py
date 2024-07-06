@@ -7,26 +7,17 @@ import logging
 
 class TGEBImageScraper:
     def __init__(self, _logger: logging.Logger, url: str) -> None:
+        self.logger = _logger
+        self.chrome_options = Options()
+        self.chrome_options.add_argument("--headless")
+        self.chrome_options.add_argument("--no-sandbox")
+        self.chrome_options.add_argument("--disable-dev-shm-usage")
 
-        self.chrome_options = webdriver.ChromeOptions()
-        self.chrome_options.add_experimental_option(
-            "androidPackage", "com.android.chrome"
-        )
-
-        # self.logger = _logger
-        # self.chrome_options = webdriver.ChromeOptions()
-        # self.chrome_options.add_experimental_option(
-        #     "androidPackage", "com.android.chrome"
-        # )
-        # self.chrome_options.add_argument("--headless")
-        # self.chrome_options.add_argument("--no-sandbox")
-        # self.chrome_options.add_argument("--disable-dev-shm-usage")
         self.url = url
 
     def scrape_images(self) -> list[str]:
-        driver = webdriver.Chrome("./chromedriver", options=self.chrome_options)
-        # self.driver = webdriver.Chrome("./chromedriver", options=self.chrome_options)
-        driver.get(self.url)
+        self.driver = webdriver.Chrome(options=self.chrome_options)
+        self.driver.get(self.url)
         time.sleep(5)
         page_source = self.driver.page_source
         self.driver.quit()
