@@ -74,7 +74,9 @@ class JSONFileScheduleStorage(JSONStorage):
         with open(self._jsonfile, "w", encoding="utf-8") as f:
             json.dump(file_ids, f, indent=4)
 
-    def save(self, file_id: str, date: str = get_date()) -> None:
+    def save(self, file_id: str, date: str = None) -> None:
+        if date == None:
+            date = get_date()
         file_ids = self.read()
         file_ids[date] = file_id
         self.write(file_ids)
@@ -85,7 +87,9 @@ class JSONFileScheduleStorage(JSONStorage):
         del file_ids[date]
         self.write(file_ids)
 
-    def exists(self, date: str = get_date()) -> bool:
+    def exists(self, date: str = None) -> bool:
+        if date == None:
+            date = get_date()
         if date in self.read().keys():
             return True
         else:
@@ -113,7 +117,9 @@ class JSONFileOutageStorage(JSONStorage):
         with open(self._jsonfile, "w", encoding="utf-8") as f:
             json.dump(outages, f, indent=4)
 
-    def save(self, power_off: int, power_on: int = get_unix()) -> None:
+    def save(self, power_off: int, power_on: int = None) -> None:
+        if power_on == None:
+            power_on = get_unix()
         date = unix_to_date(power_off)
         general_outages = self.read()
         if not date in general_outages.keys():
@@ -132,17 +138,23 @@ class JSONFileOutageStorage(JSONStorage):
         del outages[date][outage]
         self.write(outages)
 
-    def exists(self, outage: int = 1, date: str = get_date()) -> bool:
+    def exists(self, outage: int = 1, date: str = None) -> bool:
+        if date == None:
+            date = get_date()
         if str(outage) in self.read()[date].keys():
             return True
         else:
             return False
 
-    def get_outage(self, outage: int = 1, date: str = get_date()) -> dict[str:int]:
+    def get_outage(self, outage: int = 1, date: str = None) -> dict[str:int]:
+        if date == None:
+            date = get_date()
         if self.exists(outage):
             return self.read()[date][outage]
 
-    def lasted(self, outage: int = 1, date: str = get_date()) -> int:
+    def lasted(self, outage: int = 1, date: str = None) -> int:
+        if date == None:
+            date = get_date()
         if self.exists(outage):
             data = self.read()
             return int(data[date][str(outage)]["end"] - data[date][outage]["start"])
