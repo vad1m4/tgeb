@@ -109,7 +109,6 @@ def subscribe(message: types.Message, bot: TeleBot) -> None:
 
 
 def notifications(message: types.Message, bot: TeleBot) -> None:
-    generic_markup = _generic_markup(bot, message.from_user.id)
     bot.user_action_logger.cmd(message, "notifications")
     markup = notifications_markup(bot, message.from_user.id)
     bot.send_message(
@@ -121,7 +120,6 @@ def notifications(message: types.Message, bot: TeleBot) -> None:
 
 
 def unsubscribe(message: types.Message, bot: TeleBot) -> None:
-    generic_markup = _generic_markup(bot, message.from_user.id)
     bot.user_action_logger.cmd(message, "unsubscribe")
     if bot.user_storage.subscribed(message.from_user.id, "outages"):
         bot.user_storage.delete(message.from_user.id, "outages")
@@ -143,7 +141,6 @@ def unsubscribe(message: types.Message, bot: TeleBot) -> None:
 
 
 def subscribe_stats(message: types.Message, bot: TeleBot) -> None:
-    generic_markup = _generic_markup(bot, message.from_user.id)
     bot.user_action_logger.cmd(message, "subscribe_stats")
     if not bot.user_storage.subscribed(message.from_user.id, "stats"):
         bot.user_storage.save(message.chat.id, "stats")
@@ -165,7 +162,6 @@ def subscribe_stats(message: types.Message, bot: TeleBot) -> None:
 
 
 def unsubscribe_stats(message: types.Message, bot: TeleBot) -> None:
-    generic_markup = _generic_markup(bot, message.from_user.id)
     markup = notifications_markup(bot, message.from_user.id)
     bot.user_action_logger.cmd(message, "unsubscribe_stats")
     if bot.user_storage.subscribed(message.from_user.id, "stats"):

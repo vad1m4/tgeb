@@ -279,7 +279,6 @@ def announce(message: types.Message, bot: TeleBot, group: str):
                 user,
                 f"⚠️ Оголошення від адміністратора:\n\n{message.text}",
                 parse_mode="html",
-                reply_markup=generic_choice,
             )
         bot.general_logger.info(f"Notified users")
         bot.send_message(
