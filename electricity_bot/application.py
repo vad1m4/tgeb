@@ -102,11 +102,11 @@ class Application(telebot.TeleBot):
 
         ### Electricity checker loop init
 
-        self.last_power_on = int
-        self.last_power_off = int
+        self.last_power_on = self.outages_storage.read()["temp_start"]
+        self.last_power_off = self.outages_storage.read()["temp_end"]
 
-        self.last_power_on_local = int
-        self.last_power_off_local = int
+        self.last_power_on_local = self.outages_storage.read()["temp_start"]
+        self.last_power_off_local = self.outages_storage.read()["temp_end"]
 
         self.state_v = bool
         self._init_loop()

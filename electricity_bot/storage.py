@@ -153,7 +153,9 @@ class JSONFileOutageStorage(JSONStorage):
 
     def _init_storage(self) -> None:
         if not self._jsonfile.exists():
-            self._jsonfile.write_text("{}")
+            self._jsonfile.write_text(
+                f'{{"temp_start": {get_unix()}, "temp_end": {get_unix()}}}'
+            )
 
     def read(self) -> dict:
         with open(self._jsonfile, "r", encoding="utf-8") as f:
@@ -177,6 +179,13 @@ class JSONFileOutageStorage(JSONStorage):
             "start": power_off,
             "end": power_on,
         }
+        self.write(general_outages)
+
+    def temp(self, _type: str = "start", time: int = None):
+        if time == None:
+            time = get_unix()
+        general_outages = self.read()
+        general_outages[f"temp_{_type}"] = time
         self.write(general_outages)
 
     def delete(self, outage: int = 1) -> None:

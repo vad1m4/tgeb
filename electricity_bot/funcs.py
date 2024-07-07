@@ -29,12 +29,8 @@ def termux_loop(bot: TeleBot, run_event: Event) -> None:
     a = termux_api.battery_status()
     if a.result["plugged"] == "UNPLUGGED":
         bot.state_v = False
-        bot.last_power_off = get_unix()
-        bot.last_power_off_local = get_unix()
     else:
         bot.state_v = True
-        bot.last_power_on = get_unix()
-        bot.last_power_on_local = get_unix()
 
     bot.general_logger.info(
         f"Electricity checker thread initialized. Initial state: {a.result['plugged']}"
@@ -53,8 +49,10 @@ def termux_loop(bot: TeleBot, run_event: Event) -> None:
         if a.result["plugged"] == "UNPLUGGED":
             if bot.state_v != False:
                 bot.state_v = False
-                bot.last_power_off = get_unix()
-                bot.last_power_off_local = get_unix()
+                unix = get_unix()
+                bot.outages_storage.temp("start", unix)
+                bot.last_power_off = unix
+                bot.last_power_off_local = unix
                 bot.general_logger.info(f"Electricity is out. Notifying users.")
                 bot.outage_logger.warning(f"Electricity is out.")
                 for user_id in bot.user_storage.read()["outages"]:
@@ -76,7 +74,9 @@ def termux_loop(bot: TeleBot, run_event: Event) -> None:
         else:
             if bot.state_v != True:
                 bot.state_v = True
-                bot.last_power_on = get_unix()
+                unix = get_unix()
+                bot.outages_storage.temp("end", unix)
+                bot.last_power_on = unix
                 bot.outages_storage.save(bot.last_power_off_local, bot.last_power_on)
                 bot.general_logger.info(f"Electricity is back on. Notifying users.")
                 bot.outage_logger.warning(f"Electricity is back on.")
