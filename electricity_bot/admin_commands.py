@@ -1,4 +1,4 @@
-from telebot import types, TeleBot
+from telebot import types, TeleBot, apihelper
 from electricity_bot.vars import (
     cancel,
     schedules_markup,
@@ -273,13 +273,32 @@ def announce(message: types.Message, bot: TeleBot, group: str):
         bot.general_logger.info(
             f'Admin {message.from_user.first_name} {message.from_user.last_name} [{message.from_user.id}] announced to "{group}", text: {message.text}'
         )
-        for user in bot.user_storage.read()[group]:
-            bot.general_logger.info(f"Notifying {user}")
-            bot.send_message(
-                user,
-                f"⚠️ Оголошення від адміністратора:\n\n{message.text}",
-                parse_mode="html",
-            )
+        for user_id in bot.user_storage.read()[group]:
+            try:
+                bot.send_message(
+                    user_id,
+                    f"⚠️ Оголошення від адміністратора:\n\n{message.text}",
+                    parse_mode="html",
+                )
+                bot.general_logger.info(f"Notified {user_id}")
+            except apihelper.ApiTelegramException as e:
+                if e.error_code == 403:
+                    bot.general_logger.error(
+                        f"{user_id} has blocked the bot. Removing them from the list"
+                    )
+                    bot.user_storage.delete(user_id, "outages")
+                elif e.error_code in [401, 404]:
+                    bot.general_logger.error(
+                        f"Could not access {user_id}. Removing them from the list"
+                    )
+                    bot.user_storage.delete(user_id, "outages")
+                continue
+            except Exception as e:
+                bot.general_logger.error(
+                    f"{e} occured. Take actions regarding this error as soon as possible."
+                )
+                continue
+
         bot.general_logger.info(f"Notified users")
         bot.send_message(
             message.from_user.id,

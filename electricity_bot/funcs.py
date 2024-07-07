@@ -2,6 +2,7 @@ from telebot import TeleBot, types
 from electricity_bot.vars import generic_choice, _generic_markup, cancel
 from electricity_bot.config import ADDRESS
 from electricity_bot.time import get_time, get_unix, get_date
+from telebot import apihelper
 import electricity_bot.formatter as formatter
 from threading import Event
 import time
@@ -63,6 +64,18 @@ def termux_loop(bot: TeleBot, run_event: Event) -> None:
                             f"❌ {current_time} - {ADDRESS}, світло вимкнули. Світло було {formatter.format(bot.last_power_off-bot.last_power_on)}",
                             parse_mode="html",
                         )
+                    except apihelper.ApiTelegramException as e:
+                        if e.error_code == 403:
+                            bot.general_logger.error(
+                                f"{user_id} has blocked the bot. Removing them from the list"
+                            )
+                            bot.user_storage.delete(user_id, "outages")
+                        elif e.error_code in [401, 404]:
+                            bot.general_logger.error(
+                                f"Could not access {user_id}. Removing them from the list"
+                            )
+                            bot.user_storage.delete(user_id, "outages")
+                        continue
                     except Exception as e:
                         bot.general_logger.error(
                             f"{e} occured. Take actions regarding this error as soon as possible."
@@ -80,19 +93,32 @@ def termux_loop(bot: TeleBot, run_event: Event) -> None:
                 bot.outages_storage.save(bot.last_power_off_local, bot.last_power_on)
                 bot.general_logger.info(f"Electricity is back on. Notifying users.")
                 bot.outage_logger.warning(f"Electricity is back on.")
-                try:
-                    for user_id in bot.user_storage.read()["outages"]:
+                for user_id in bot.user_storage.read()["outages"]:
+                    try:
                         bot.general_logger.info(f"Notified: {user_id}")
                         bot.send_message(
                             user_id,
                             f"✅ {current_time} - Івасюка 50А, світло увімкнули. Світла не було {formatter.format(bot.last_power_on-bot.last_power_off)}",
                             parse_mode="html",
                         )
-                except Exception as e:
-                    bot.general_logger.error(
-                        f"{e} occured. Take actions regarding this error as soon as possible."
-                    )
-                    continue
+
+                    except apihelper.ApiTelegramException as e:
+                        if e.error_code == 403:
+                            bot.general_logger.error(
+                                f"{user_id} has blocked the bot. Removing them from the list"
+                            )
+                            bot.user_storage.delete(user_id, "outages")
+                        elif e.error_code in [401, 404]:
+                            bot.general_logger.error(
+                                f"Could not access {user_id}. Removing them from the list"
+                            )
+                            bot.user_storage.delete(user_id, "outages")
+                        continue
+                    except Exception as e:
+                        bot.general_logger.error(
+                            f"{e} occured. Take actions regarding this error as soon as possible."
+                        )
+                        continue
                 bot.general_logger.info(f"Users notified.")
             else:
                 continue
@@ -169,9 +195,27 @@ def stats(bot: TeleBot, date: str = get_date(-1)) -> None:
 
         count = bot.outages_storage.get_outage("outages")
     for user_id in bot.user_storage.read()["outages"]:
-        bot.general_logger.info(f"Notified: {user_id}")
-        bot.send_message(
-            user_id,
-            f"💡 Статистика відключень за {get_date(-1)}: \n\nКількість відключень: {count}\n\nЗагалом світла не було {formatter.format(total)}, що складає {round((total/86400)*100, 1)}% доби",
-            parse_mode="html",
-        )
+        try:
+            bot.general_logger.info(f"Notified: {user_id}")
+            bot.send_message(
+                user_id,
+                f"💡 Статистика відключень за {get_date(-1)}: \n\nКількість відключень: {count}\n\nЗагалом світла не було {formatter.format(total)}, що складає {round((total/86400)*100, 1)}% доби",
+                parse_mode="html",
+            )
+        except apihelper.ApiTelegramException as e:
+            if e.error_code == 403:
+                bot.general_logger.error(
+                    f"{user_id} has blocked the bot. Removing them from the list"
+                )
+                bot.user_storage.delete(user_id, "outages")
+            elif e.error_code in [401, 404]:
+                bot.general_logger.error(
+                    f"Could not access {user_id}. Removing them from the list"
+                )
+                bot.user_storage.delete(user_id, "outages")
+            continue
+        except Exception as e:
+            bot.general_logger.error(
+                f"{e} occured. Take actions regarding this error as soon as possible."
+            )
+            continue
