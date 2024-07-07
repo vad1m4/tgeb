@@ -7,7 +7,7 @@ tz = pytz.timezone("Europe/Kiev")
 
 def get_date(day: int = 0) -> str:
     current_datetime = datetime.datetime.now()
-    current_datetime -= datetime.timedelta(days=-day)
+    current_datetime += datetime.timedelta(days=day)
     date = current_datetime.strftime("%d-%m-%Y")
     return date
 

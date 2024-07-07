@@ -1,23 +1,18 @@
 from electricity_bot.application import Application
 from electricity_bot.config import TOKEN, TOKEN_DEBUG
-import sys
+import argparse
 
 ### Command line args
 
-debug = False
-debug_termux = False
-token = TOKEN
-
-if "--debug" in sys.argv or "--d" in sys.argv:
-    debug = True
-    token = TOKEN_DEBUG
-
-if "--debug-termux" in sys.argv or "--dt" in sys.argv:
-    debug_termux = True
-
 
 def main() -> None:
-    app = Application(token, debug, debug_termux)
+    parser = argparse.ArgumentParser("TGEB")
+    parser.add_argument("-d", "--debug", action="store_true")
+    parser.add_argument("-dt", "--debug-termux", action="store_true")
+    args = parser.parse_args()
+
+    token = TOKEN_DEBUG if args.debug else TOKEN
+    app = Application(token, args.debug, args.debug_termux)
     app.infinity_polling()
 
 
