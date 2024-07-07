@@ -194,7 +194,7 @@ def stats(bot: TeleBot, date: str = get_date(-1)) -> None:
             total += bot.outages_storage.lasted(outage, date)
 
         count = bot.outages_storage.get_outage("outages")
-    for user_id in bot.user_storage.read()["outages"]:
+    for user_id in bot.user_storage.read()["stats"]:
         try:
             bot.general_logger.info(f"Notified: {user_id}")
             bot.send_message(
@@ -207,12 +207,12 @@ def stats(bot: TeleBot, date: str = get_date(-1)) -> None:
                 bot.general_logger.error(
                     f"{user_id} has blocked the bot. Removing them from the list"
                 )
-                bot.user_storage.delete(user_id, "outages")
+                bot.user_storage.delete(user_id, "stats")
             elif e.error_code in [401, 404]:
                 bot.general_logger.error(
                     f"Could not access {user_id}. Removing them from the list"
                 )
-                bot.user_storage.delete(user_id, "outages")
+                bot.user_storage.delete(user_id, "stats")
             continue
         except Exception as e:
             bot.general_logger.error(

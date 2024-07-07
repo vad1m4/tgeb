@@ -286,12 +286,12 @@ def announce(message: types.Message, bot: TeleBot, group: str):
                     bot.general_logger.error(
                         f"{user_id} has blocked the bot. Removing them from the list"
                     )
-                    bot.user_storage.delete(user_id, "outages")
+                    bot.user_storage.delete(user_id, group)
                 elif e.error_code in [401, 404]:
                     bot.general_logger.error(
                         f"Could not access {user_id}. Removing them from the list"
                     )
-                    bot.user_storage.delete(user_id, "outages")
+                    bot.user_storage.delete(user_id, group)
                 continue
             except Exception as e:
                 bot.general_logger.error(
