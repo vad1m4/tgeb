@@ -214,7 +214,7 @@ def see_schedule(message: types.Message, bot: TeleBot) -> None:
             bot.id_storage.get_schedule(get_date()),
             parse_mode="html",
             reply_markup=generic_markup,
-            caption=f'💡 Графік відключень світла на {get_date()}.\n\n<i>Неправильний графік? Ви можете <a href="/feedback">залишити відгук</a></i>',
+            caption=f"💡 Графік відключень світла на {get_date()}.\n\n<i>Неправильний графік? Ви можете залишити відгук</i>",
         )
     elif bot.id_storage.exists("generic"):
         bot.send_photo(
@@ -222,7 +222,7 @@ def see_schedule(message: types.Message, bot: TeleBot) -> None:
             bot.id_storage.get_schedule("generic"),
             parse_mode="html",
             reply_markup=generic_markup,
-            caption=f'💡 Графік відключень світла на {get_date()}.\n\n<i>Неправильний графік? Ви можете <a href="/feedback">залишити відгук</a></i>',
+            caption=f"💡 Графік відключень світла на {get_date()}.\n\n<i>Неправильний графік? Ви можете залишити відгук</i>",
         )
     else:
         bot.send_message(
