@@ -1,7 +1,8 @@
 from telebot import TeleBot, types
-from electricity_bot.vars import generic_choice, generic_markup, cancel
+from electricity_bot.vars import generic_choice, _generic_markup, cancel
 from electricity_bot.config import ADDRESS
 from electricity_bot.time import get_time, get_unix, get_date
+from telebot import apihelper
 import electricity_bot.formatter as formatter
 from threading import Event
 import time
@@ -29,12 +30,8 @@ def termux_loop(bot: TeleBot, run_event: Event) -> None:
     a = termux_api.battery_status()
     if a.result["plugged"] == "UNPLUGGED":
         bot.state_v = False
-        bot.last_power_off = get_unix()
-        bot.last_power_off_local = get_unix()
     else:
         bot.state_v = True
-        bot.last_power_on = get_unix()
-        bot.last_power_on_local = get_unix()
 
     bot.general_logger.info(
         f"Electricity checker thread initialized. Initial state: {a.result['plugged']}"
@@ -53,8 +50,10 @@ def termux_loop(bot: TeleBot, run_event: Event) -> None:
         if a.result["plugged"] == "UNPLUGGED":
             if bot.state_v != False:
                 bot.state_v = False
-                bot.last_power_off = get_unix()
-                bot.last_power_off_local = get_unix()
+                unix = get_unix()
+                bot.outages_storage.temp("start", unix)
+                bot.last_power_off = unix
+                bot.last_power_off_local = unix
                 bot.general_logger.info(f"Electricity is out. Notifying users.")
                 bot.outage_logger.warning(f"Electricity is out.")
                 for user_id in bot.user_storage.read()["outages"]:
@@ -65,6 +64,18 @@ def termux_loop(bot: TeleBot, run_event: Event) -> None:
                             f"❌ {current_time} - {ADDRESS}, світло вимкнули. Світло було {formatter.format(bot.last_power_off-bot.last_power_on)}",
                             parse_mode="html",
                         )
+                    except apihelper.ApiTelegramException as e:
+                        if e.error_code == 403:
+                            bot.general_logger.error(
+                                f"{user_id} has blocked the bot. Removing them from the list"
+                            )
+                            bot.user_storage.delete(user_id, "outages")
+                        elif e.error_code in [401, 404]:
+                            bot.general_logger.error(
+                                f"Could not access {user_id}. Removing them from the list"
+                            )
+                            bot.user_storage.delete(user_id, "outages")
+                        continue
                     except Exception as e:
                         bot.general_logger.error(
                             f"{e} occured. Take actions regarding this error as soon as possible."
@@ -76,7 +87,9 @@ def termux_loop(bot: TeleBot, run_event: Event) -> None:
         else:
             if bot.state_v != True:
                 bot.state_v = True
-                bot.last_power_on = get_unix()
+                unix = get_unix()
+                bot.outages_storage.temp("end", unix)
+                bot.last_power_on = unix
                 bot.outages_storage.save(bot.last_power_off_local, bot.last_power_on)
                 bot.general_logger.info(f"Electricity is back on. Notifying users.")
                 bot.outage_logger.warning(f"Electricity is back on.")
@@ -88,6 +101,19 @@ def termux_loop(bot: TeleBot, run_event: Event) -> None:
                             f"✅ {current_time} - Івасюка 50А, світло увімкнули. Світла не було {formatter.format(bot.last_power_on-bot.last_power_off)}",
                             parse_mode="html",
                         )
+
+                    except apihelper.ApiTelegramException as e:
+                        if e.error_code == 403:
+                            bot.general_logger.error(
+                                f"{user_id} has blocked the bot. Removing them from the list"
+                            )
+                            bot.user_storage.delete(user_id, "outages")
+                        elif e.error_code in [401, 404]:
+                            bot.general_logger.error(
+                                f"Could not access {user_id}. Removing them from the list"
+                            )
+                            bot.user_storage.delete(user_id, "outages")
+                        continue
                     except Exception as e:
                         bot.general_logger.error(
                             f"{e} occured. Take actions regarding this error as soon as possible."
@@ -99,6 +125,7 @@ def termux_loop(bot: TeleBot, run_event: Event) -> None:
 
 
 def generic(message: types.Message, bot: TeleBot) -> None:
+    generic_markup = _generic_markup(bot, message.from_user.id)
     name = message.from_user.first_name
     bot.send_message(
         message.chat.id,
@@ -106,86 +133,6 @@ def generic(message: types.Message, bot: TeleBot) -> None:
         parse_mode="html",
         reply_markup=generic_markup,
     )
-
-
-def add_schedule(
-    message: types.Message,
-    bot: TeleBot,
-):
-    if message.text == "Назад":
-        generic(message, bot)
-    else:
-        if bot.id_storage.exists(message.text):
-            bot.send_message(
-                message.chat.id,
-                f"Цей графік вже було додано. Оновити його?",
-                parse_mode="html",
-                reply_markup=generic_choice,
-            )
-            bot.register_next_step_handler(
-                message, do_update_schedule, bot, message.text
-            )
-        else:
-            bot.send_message(
-                message.chat.id,
-                f"Надішліть фотографію графіку.",
-                parse_mode="html",
-                reply_markup=cancel,
-            )
-            bot.register_next_step_handler(message, handle_photos, bot, message.text)
-
-
-def do_update_schedule(message: types.Message, bot: TeleBot, date: str = get_date()):
-    if message.text == "Назад":
-        generic(message, bot)
-    elif message.text == "Так":
-        bot.send_message(
-            message.chat.id,
-            f"Надішліть фотографію графіку.",
-            parse_mode="html",
-            reply_markup=cancel,
-        )
-        bot.register_next_step_handler(message, handle_photos, bot, date, False)
-
-    elif message.text == "Ні":
-        generic(message, bot)
-    else:
-        bot.send_message(
-            message.chat.id,
-            f'Не розумію. Оберіть відповідь "Так", "Ні" або "Назад".',
-            parse_mode="html",
-            reply_markup=generic_choice,
-        )
-
-
-def handle_photos(
-    message: types.Message,
-    bot: TeleBot,
-    date: str = get_date(),
-) -> None:
-    bot.user_action_logger.cmd(message, "handle_photos")
-    if message.content_type == "photo":
-        file_id = message.photo[-1].file_id
-        bot.id_storage.save(file_id, date)
-
-        bot.send_message(
-            message.chat.id,
-            f"Графік успішно додано.",
-            parse_mode="html",
-            reply_markup=generic_markup,
-        )
-        generic(message, bot)
-    else:
-        if message.text == "Назад":
-            generic(message, bot)
-        else:
-            bot.send_message(
-                message.chat.id,
-                f"Надішліть коректну фотографію.",
-                parse_mode="html",
-                reply_markup=cancel,
-            )
-            bot.register_next_step_handler(message, handle_photos, bot)
 
 
 def stats_job(bot: TeleBot) -> None:
@@ -247,15 +194,26 @@ def stats(bot: TeleBot, date: str = get_date(-1)) -> None:
             total += bot.outages_storage.lasted(outage, date)
 
         count = bot.outages_storage.get_outage("outages")
-    for user_id in bot.user_storage.read()["outages"]:
+    for user_id in bot.user_storage.read()["stats"]:
         try:
             bot.general_logger.info(f"Notified: {user_id}")
             bot.send_message(
                 user_id,
                 f"💡 Статистика відключень за {get_date(-1)}: \n\nКількість відключень: {count}\n\nЗагалом світла не було {formatter.format(total)}, що складає {round((total/86400)*100, 1)}% доби",
                 parse_mode="html",
-                reply_markup=generic_markup,
             )
+        except apihelper.ApiTelegramException as e:
+            if e.error_code == 403:
+                bot.general_logger.error(
+                    f"{user_id} has blocked the bot. Removing them from the list"
+                )
+                bot.user_storage.delete(user_id, "stats")
+            elif e.error_code in [401, 404]:
+                bot.general_logger.error(
+                    f"Could not access {user_id}. Removing them from the list"
+                )
+                bot.user_storage.delete(user_id, "stats")
+            continue
         except Exception as e:
             bot.general_logger.error(
                 f"{e} occured. Take actions regarding this error as soon as possible."

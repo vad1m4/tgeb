@@ -26,9 +26,11 @@ class JSONFileUserStorage(JSONStorage):
 
     def _init_storage(self) -> None:
         if not self._jsonfile.exists():
-            self._jsonfile.write_text('{"outages": [], "stats": []}')
+            self._jsonfile.write_text(
+                '{"outages": [], "stats": [], "users": {"blacklist": {}}}'
+            )
 
-    def read(self) -> list[int]:
+    def read(self) -> dict:
         with open(self._jsonfile, "r", encoding="utf-8") as f:
             data = json.load(f)
             return data
@@ -55,6 +57,51 @@ class JSONFileUserStorage(JSONStorage):
         else:
             return False
 
+    def authorize(self, user_id: int, phone_number: int) -> bool:
+        if not self.is_blacklisted(phone_number) and not self.is_blacklisted(user_id):
+            if not self.is_authorized(user_id):
+                users = self.read()
+                users["users"][user_id] = phone_number
+                self.write(users)
+                return True
+            else:
+                return True
+
+    def is_authorized(self, user_id: int) -> bool:
+        if str(user_id) in self.read()["users"].keys():
+            return True
+        else:
+            return False
+
+    def blacklist(self, phone_number: int | str, reason: str) -> None:
+        users = self.read()
+        users["users"]["blacklist"][phone_number] = reason
+        users["users"] = {
+            key: val for key, val in users["users"].items() if val != phone_number
+        }
+        self.write(users)
+
+    def unblacklist(self, phone_number: int | str) -> bool:
+        if self.is_blacklisted(phone_number):
+            users = self.read()
+            users["users"]["blacklist"].pop(phone_number)
+            self.write(users)
+            return True
+        else:
+            return False
+
+    def is_blacklisted(self, phone_number: int | str) -> bool:
+        if str(phone_number) in self.read()["users"]["blacklist"].keys():
+            return True
+        else:
+            return False
+
+    def why_blacklist(self, phone_number: int | str) -> str:
+        if self.is_blacklisted(phone_number):
+            return self.read()["users"]["blacklist"][phone_number]
+        else:
+            return None
+
 
 class JSONFileScheduleStorage(JSONStorage):
     def __init__(self, jsonfile: Path) -> None:
@@ -74,7 +121,9 @@ class JSONFileScheduleStorage(JSONStorage):
         with open(self._jsonfile, "w", encoding="utf-8") as f:
             json.dump(file_ids, f, indent=4)
 
-    def save(self, file_id: str, date: str = get_date()) -> None:
+    def save(self, file_id: str, date: str = None) -> None:
+        if date == None:
+            date = get_date()
         file_ids = self.read()
         file_ids[date] = file_id
         self.write(file_ids)
@@ -85,7 +134,9 @@ class JSONFileScheduleStorage(JSONStorage):
         del file_ids[date]
         self.write(file_ids)
 
-    def exists(self, date: str = get_date()) -> bool:
+    def exists(self, date: str = None) -> bool:
+        if date == None:
+            date = get_date()
         if date in self.read().keys():
             return True
         else:
@@ -102,7 +153,9 @@ class JSONFileOutageStorage(JSONStorage):
 
     def _init_storage(self) -> None:
         if not self._jsonfile.exists():
-            self._jsonfile.write_text("{}")
+            self._jsonfile.write_text(
+                f'{{"temp_start": {get_unix()}, "temp_end": {get_unix()}}}'
+            )
 
     def read(self) -> dict:
         with open(self._jsonfile, "r", encoding="utf-8") as f:
@@ -113,7 +166,9 @@ class JSONFileOutageStorage(JSONStorage):
         with open(self._jsonfile, "w", encoding="utf-8") as f:
             json.dump(outages, f, indent=4)
 
-    def save(self, power_off: int, power_on: int = get_unix()) -> None:
+    def save(self, power_off: int, power_on: int = None) -> None:
+        if power_on == None:
+            power_on = get_unix()
         date = unix_to_date(power_off)
         general_outages = self.read()
         if not date in general_outages.keys():
@@ -126,23 +181,36 @@ class JSONFileOutageStorage(JSONStorage):
         }
         self.write(general_outages)
 
+    def temp(self, _type: str = "start", time: int = None):
+        if time == None:
+            time = get_unix()
+        general_outages = self.read()
+        general_outages[f"temp_{_type}"] = time
+        self.write(general_outages)
+
     def delete(self, outage: int = 1) -> None:
         outages = self.read()
         date = get_date()
         del outages[date][outage]
         self.write(outages)
 
-    def exists(self, outage: int = 1, date: str = get_date()) -> bool:
+    def exists(self, outage: int = 1, date: str = None) -> bool:
+        if date == None:
+            date = get_date()
         if str(outage) in self.read()[date].keys():
             return True
         else:
             return False
 
-    def get_outage(self, outage: int = 1, date: str = get_date()) -> dict[str:int]:
+    def get_outage(self, outage: int = 1, date: str = None) -> dict[str:int]:
+        if date == None:
+            date = get_date()
         if self.exists(outage):
             return self.read()[date][outage]
 
-    def lasted(self, outage: int = 1, date: str = get_date()) -> int:
+    def lasted(self, outage: int = 1, date: str = None) -> int:
+        if date == None:
+            date = get_date()
         if self.exists(outage):
             data = self.read()
             return int(data[date][str(outage)]["end"] - data[date][outage]["start"])
