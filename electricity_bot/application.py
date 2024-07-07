@@ -287,7 +287,7 @@ class Application(telebot.TeleBot):
 
         schedule.every().day.at("00:00", "Europe/Kiev").do(funcs.stats_job, self)
 
-        schedule.every().day.at("20:00", "Europe/Kiev").do(funcs.scrape_job, self)
+        schedule.every().day.at("22:00", "Europe/Kiev").do(funcs.scrape_job, self)
 
         try:
             run_event = threading.Event()
