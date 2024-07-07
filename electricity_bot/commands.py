@@ -1,46 +1,93 @@
 from electricity_bot.config import ADDRESS
 from electricity_bot.vars import (
-    generic_markup,
+    _generic_markup,
     cancel,
-    generic_choice,
     notifications_markup,
     schedules_markup,
+    login_markup,
 )
 from electricity_bot.time import get_date, get_time
-from electricity_bot.funcs import handle_photos, do_update_schedule
-from electricity_bot.funcs import add_schedule as _add_schedule
 from telebot import TeleBot, types
+
+
+### User commands
 
 
 def start(message: types.Message, bot: TeleBot) -> None:
     bot.user_action_logger.cmd(message, "start")
     name = message.from_user.first_name
-    if name.lower() == "group":
-        bot.send_message(
-            message.chat.id,
-            f"👋 Привіт<b> всім</b>! \n\n💡 Я - ваш персональний помічник, який буде сповіщати вас про відключення електроенергії у будинку {ADDRESS}. Мене можна додати в групи або підписатися на сповіщення в особистих повідомленнях.",
-            parse_mode="html",
-            reply_markup=generic_markup,
-        )
+    bot.send_message(
+        message.chat.id,
+        f"👋 Привіт<b> {name}</b>! \n\n💡 Я - ваш персональний помічник, який буде сповіщати вас про відключення електроенергії у будинку {ADDRESS}.\n\nДля початку роботи зі мною, авторизуйтеся за допомогою номеру телефона.",
+        parse_mode="html",
+        reply_markup=login_markup,
+    )
+
+
+def not_authorized(message: types.Message, bot: TeleBot) -> None:
+    bot.user_action_logger.cmd(message, "not authorized")
+    bot.send_message(
+        message.chat.id,
+        f" \n\n❌ Ви не авторизовані. Для початку роботи зі мною, авторизуйтеся за допомогою номеру телефона.",
+        parse_mode="html",
+        reply_markup=login_markup,
+    )
+
+
+def authorize(message: types.Message, bot: TeleBot) -> None:
+    bot.user_action_logger.cmd(message, "authorize")
+    user_id = message.from_user.id
+    generic_markup = _generic_markup(bot, message.from_user.id)
+    if not bot.user_storage.is_authorized(user_id):
+        phone_num = message.contact.phone_number
+
+        if bot.user_storage.authorize(user_id, phone_num):
+            bot.user_action_logger.info(
+                f"Successfully authorised user {message.from_user.first_name} {message.from_user.last_name} via phone number ({phone_num})"
+            )
+            bot.general_logger.info(
+                f"Successfully authorised user {message.from_user.first_name} {message.from_user.last_name} via phone number ({phone_num})"
+            )
+            bot.send_message(
+                message.chat.id,
+                f"✅ Вас було успішно авторизовано за номером телефону {phone_num}. Тепер вам доступні усі мої функції.",
+                parse_mode="html",
+                reply_markup=generic_markup,
+            )
+        else:
+            bot.user_action_logger.info(
+                f"Failed to authorise user {message.from_user.first_name} {message.from_user.last_name} via phone number ({phone_num}): phone number blacklisted"
+            )
+            bot.general_logger.info(
+                f"Failed to authorise user {message.from_user.first_name} {message.from_user.last_name} via phone number ({phone_num}): phone number blacklisted"
+            )
+            bot.send_message(
+                message.chat.id,
+                f"❌ На жаль, номер {phone_num} був заблокований в нашому боті. Причина блокування: {bot.user_storage.why_blacklist(phone_num)}",
+                parse_mode="html",
+                reply_markup=cancel,
+            )
     else:
         bot.send_message(
             message.chat.id,
-            f"👋 Привіт,<b> {name}</b>! \n\n💡 Я - твій персональний помічник, який буде тебе сповіщати про відключення електроенергії у будинку {ADDRESS}. Мене можна додати в групи або підписатися на сповіщення в особистих повідомленнях.",
+            f"♻️ Ви вже авторизувалися в нашому боті.",
             parse_mode="html",
             reply_markup=generic_markup,
         )
 
 
 def handle_other(message: types.Message, bot: TeleBot) -> None:
+    generic_markup = _generic_markup(bot, message.from_user.id)
     bot.send_message(
         message.chat.id,
-        f"Я ще не вмію сприймати такі повідомлення. Щоб мною користуватися, оберіть одну з опцій нижче.",
+        f"🤖 Я ще не вмію сприймати такі повідомлення. Щоб мною користуватися, оберіть одну з опцій нижче.",
         parse_mode="html",
         reply_markup=generic_markup,
     )
 
 
 def subscribe(message: types.Message, bot: TeleBot) -> None:
+    generic_markup = _generic_markup(bot, message.from_user.id)
     bot.user_action_logger.cmd(message, "subscribe")
     if not bot.user_storage.subscribed(message.from_user.id, "outages"):
         bot.user_storage.save(message.chat.id, "outages")
@@ -62,17 +109,19 @@ def subscribe(message: types.Message, bot: TeleBot) -> None:
 
 
 def notifications(message: types.Message, bot: TeleBot) -> None:
+    generic_markup = _generic_markup(bot, message.from_user.id)
     bot.user_action_logger.cmd(message, "notifications")
     markup = notifications_markup(bot, message.from_user.id)
     bot.send_message(
         message.chat.id,
-        f"Ось перелік ваших налаштувань:\n\nВи {'підписані' if bot.user_storage.subscribed(message.from_user.id, 'outages') else 'не підписані'} на сповіщення.\n\nВи {'підписані' if bot.user_storage.subscribed(message.from_user.id, 'stats') else 'не підписані'} на щоденну статистику.",
+        f"🛠 Ось перелік ваших налаштувань:\n\nВи {'підписані' if bot.user_storage.subscribed(message.from_user.id, 'outages') else 'не підписані'} на сповіщення.\n\nВи {'підписані' if bot.user_storage.subscribed(message.from_user.id, 'stats') else 'не підписані'} на щоденну статистику.",
         parse_mode="html",
         reply_markup=markup,
     )
 
 
 def unsubscribe(message: types.Message, bot: TeleBot) -> None:
+    generic_markup = _generic_markup(bot, message.from_user.id)
     bot.user_action_logger.cmd(message, "unsubscribe")
     if bot.user_storage.subscribed(message.from_user.id, "outages"):
         bot.user_storage.delete(message.from_user.id, "outages")
@@ -94,6 +143,7 @@ def unsubscribe(message: types.Message, bot: TeleBot) -> None:
 
 
 def subscribe_stats(message: types.Message, bot: TeleBot) -> None:
+    generic_markup = _generic_markup(bot, message.from_user.id)
     bot.user_action_logger.cmd(message, "subscribe_stats")
     if not bot.user_storage.subscribed(message.from_user.id, "stats"):
         bot.user_storage.save(message.chat.id, "stats")
@@ -115,6 +165,7 @@ def subscribe_stats(message: types.Message, bot: TeleBot) -> None:
 
 
 def unsubscribe_stats(message: types.Message, bot: TeleBot) -> None:
+    generic_markup = _generic_markup(bot, message.from_user.id)
     markup = notifications_markup(bot, message.from_user.id)
     bot.user_action_logger.cmd(message, "unsubscribe_stats")
     if bot.user_storage.subscribed(message.from_user.id, "stats"):
@@ -137,6 +188,7 @@ def unsubscribe_stats(message: types.Message, bot: TeleBot) -> None:
 
 
 def state(message: types.Message, bot: TeleBot) -> None:
+    generic_markup = _generic_markup(bot, message.from_user.id)
     bot.user_action_logger.cmd(message, "state")
     current_time = get_time()
     if bot.state_v == True:
@@ -156,6 +208,7 @@ def state(message: types.Message, bot: TeleBot) -> None:
 
 
 def see_schedule(message: types.Message, bot: TeleBot) -> None:
+    generic_markup = _generic_markup(bot, message.from_user.id)
     bot.user_action_logger.cmd(message, "see_schedule")
     if bot.id_storage.exists():
         bot.send_photo(
@@ -163,7 +216,7 @@ def see_schedule(message: types.Message, bot: TeleBot) -> None:
             bot.id_storage.get_schedule(),
             parse_mode="html",
             reply_markup=generic_markup,
-            caption=f"Графік відключень світла на {get_date()}.",
+            caption=f"💡 Графік відключень світла на {get_date()}.",
         )
     elif bot.id_storage.exists("generic"):
         bot.send_photo(
@@ -171,54 +224,12 @@ def see_schedule(message: types.Message, bot: TeleBot) -> None:
             bot.id_storage.get_schedule("generic"),
             parse_mode="html",
             reply_markup=generic_markup,
-            caption=f"Графік відключень світла на {get_date()}",
+            caption=f"💡 Графік відключень світла на {get_date()}",
         )
     else:
         bot.send_message(
             message.chat.id,
-            f"На жаль, графіку відключень світла немає. Якщо проблема продовжиться, залиште відгук.",
-            parse_mode="html",
-            reply_markup=generic_markup,
-        )
-
-
-def add_schedule(
-    message: types.Message,
-    bot: TeleBot,
-    generic: bool = False,
-) -> None:
-    bot.user_action_logger.cmd(message, "add_schedule")
-    if generic:
-        bot.send_message(
-            message.chat.id,
-            f"Надішліть фотографію графіку.",
-            parse_mode="html",
-            reply_markup=cancel,
-        )
-        bot.register_next_step_handler(message, handle_photos, bot, generic)
-    else:
-        markup = schedules_markup(bot)
-        bot.send_message(
-            message.chat.id,
-            f"Оберіть дату.",
-            parse_mode="html",
-            reply_markup=markup,
-        )
-        bot.register_next_step_handler(message, _add_schedule, bot)
-
-
-def current_date(message: types.Message, bot: TeleBot):
-    if bot.is_admin(message):
-        bot.send_message(
-            message.chat.id,
-            f"Сьогоднішня дата: {get_date()} {get_time()}",
-            parse_mode="html",
-            reply_markup=generic_markup,
-        )
-    else:
-        bot.send_message(
-            message.chat.id,
-            f"❌ Ви не є адміном цього бота.",
+            f"❌ На жаль, графіку відключень світла немає. Якщо проблема продовжиться, залиште відгук.",
             parse_mode="html",
             reply_markup=generic_markup,
         )

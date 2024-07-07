@@ -26,9 +26,11 @@ class JSONFileUserStorage(JSONStorage):
 
     def _init_storage(self) -> None:
         if not self._jsonfile.exists():
-            self._jsonfile.write_text('{"outages": [], "stats": []}')
+            self._jsonfile.write_text(
+                '{"outages": [], "stats": [], "users": {"blacklist": {}}}'
+            )
 
-    def read(self) -> list[int]:
+    def read(self) -> dict:
         with open(self._jsonfile, "r", encoding="utf-8") as f:
             data = json.load(f)
             return data
@@ -54,6 +56,51 @@ class JSONFileUserStorage(JSONStorage):
             return True
         else:
             return False
+
+    def authorize(self, user_id: int, phone_number: int) -> bool:
+        if not self.is_blacklisted(phone_number) and not self.is_blacklisted(user_id):
+            if not self.is_authorized(user_id):
+                users = self.read()
+                users["users"][user_id] = phone_number
+                self.write(users)
+                return True
+            else:
+                return True
+
+    def is_authorized(self, user_id: int) -> bool:
+        if str(user_id) in self.read()["users"].keys():
+            return True
+        else:
+            return False
+
+    def blacklist(self, phone_number: int | str, reason: str) -> None:
+        users = self.read()
+        users["users"]["blacklist"][phone_number] = reason
+        users["users"] = {
+            key: val for key, val in users["users"].items() if val != phone_number
+        }
+        self.write(users)
+
+    def unblacklist(self, phone_number: int | str) -> bool:
+        if self.is_blacklisted(phone_number):
+            users = self.read()
+            users["users"]["blacklist"].pop(phone_number)
+            self.write(users)
+            return True
+        else:
+            return False
+
+    def is_blacklisted(self, phone_number: int | str) -> bool:
+        if str(phone_number) in self.read()["users"]["blacklist"].keys():
+            return True
+        else:
+            return False
+
+    def why_blacklist(self, phone_number: int | str) -> str:
+        if self.is_blacklisted(phone_number):
+            return self.read()["users"]["blacklist"][phone_number]
+        else:
+            return None
 
 
 class JSONFileScheduleStorage(JSONStorage):
