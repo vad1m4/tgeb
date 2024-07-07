@@ -1,5 +1,5 @@
 from telebot import TeleBot, types
-from electricity_bot.vars import generic_choice, generic_markup, cancel
+from electricity_bot.vars import generic_choice, _generic_markup, cancel
 from electricity_bot.config import ADDRESS
 from electricity_bot.time import get_time, get_unix, get_date
 import electricity_bot.formatter as formatter
@@ -99,6 +99,7 @@ def termux_loop(bot: TeleBot, run_event: Event) -> None:
 
 
 def generic(message: types.Message, bot: TeleBot) -> None:
+    generic_markup = _generic_markup(bot, message.from_user.id)
     name = message.from_user.first_name
     bot.send_message(
         message.chat.id,
@@ -106,86 +107,6 @@ def generic(message: types.Message, bot: TeleBot) -> None:
         parse_mode="html",
         reply_markup=generic_markup,
     )
-
-
-def add_schedule(
-    message: types.Message,
-    bot: TeleBot,
-):
-    if message.text == "Назад":
-        generic(message, bot)
-    else:
-        if bot.id_storage.exists(message.text):
-            bot.send_message(
-                message.chat.id,
-                f"Цей графік вже було додано. Оновити його?",
-                parse_mode="html",
-                reply_markup=generic_choice,
-            )
-            bot.register_next_step_handler(
-                message, do_update_schedule, bot, message.text
-            )
-        else:
-            bot.send_message(
-                message.chat.id,
-                f"Надішліть фотографію графіку.",
-                parse_mode="html",
-                reply_markup=cancel,
-            )
-            bot.register_next_step_handler(message, handle_photos, bot, message.text)
-
-
-def do_update_schedule(message: types.Message, bot: TeleBot, date: str = get_date()):
-    if message.text == "Назад":
-        generic(message, bot)
-    elif message.text == "Так":
-        bot.send_message(
-            message.chat.id,
-            f"Надішліть фотографію графіку.",
-            parse_mode="html",
-            reply_markup=cancel,
-        )
-        bot.register_next_step_handler(message, handle_photos, bot, date, False)
-
-    elif message.text == "Ні":
-        generic(message, bot)
-    else:
-        bot.send_message(
-            message.chat.id,
-            f'Не розумію. Оберіть відповідь "Так", "Ні" або "Назад".',
-            parse_mode="html",
-            reply_markup=generic_choice,
-        )
-
-
-def handle_photos(
-    message: types.Message,
-    bot: TeleBot,
-    date: str = get_date(),
-) -> None:
-    bot.user_action_logger.cmd(message, "handle_photos")
-    if message.content_type == "photo":
-        file_id = message.photo[-1].file_id
-        bot.id_storage.save(file_id, date)
-
-        bot.send_message(
-            message.chat.id,
-            f"Графік успішно додано.",
-            parse_mode="html",
-            reply_markup=generic_markup,
-        )
-        generic(message, bot)
-    else:
-        if message.text == "Назад":
-            generic(message, bot)
-        else:
-            bot.send_message(
-                message.chat.id,
-                f"Надішліть коректну фотографію.",
-                parse_mode="html",
-                reply_markup=cancel,
-            )
-            bot.register_next_step_handler(message, handle_photos, bot)
 
 
 def stats_job(bot: TeleBot) -> None:
@@ -253,5 +174,4 @@ def stats(bot: TeleBot, date: str = get_date(-1)) -> None:
             user_id,
             f"💡 Статистика відключень за {get_date(-1)}: \n\nКількість відключень: {count}\n\nЗагалом світла не було {formatter.format(total)}, що складає {round((total/86400)*100, 1)}% доби",
             parse_mode="html",
-            reply_markup=generic_markup,
         )
