@@ -12,21 +12,23 @@ state_str = "Який стан світла?"
 schedule_str = f"Графік відключень групи {GROUP}"
 notifications_str = "Сповіщення"
 admin_str = "Меню адміна"
+feedback_str = "Залишити відгук"
 
 
 def _generic_markup(bot: TeleBot, user_id: int) -> types.ReplyKeyboardMarkup:
-    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
     notifications = types.KeyboardButton(str(notifications_str))
     state = types.KeyboardButton(str(state_str))
     schedule = types.KeyboardButton(str(schedule_str))
+    feedback = types.KeyboardButton(str(feedback_str))
     if bot.is_admin(user_id):
         admin = types.KeyboardButton(str(admin_str))
-        return markup.add(state, notifications, schedule, admin)
-    return markup.add(state, notifications, schedule)
+        return markup.add(state, notifications, schedule, admin, feedback)
+    return markup.add(state, notifications, schedule, feedback)
 
 
 def notifications_markup(bot: TeleBot, user_id: int) -> types.ReplyKeyboardMarkup:
-    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
     if not bot.user_storage.subscribed(user_id, "outages"):
         generic = types.KeyboardButton(str(subscribe_str))
     else:
@@ -85,7 +87,6 @@ blacklist = types.KeyboardButton(blacklist_str)
 unblacklist = types.KeyboardButton(unblacklist_str)
 announcement = types.KeyboardButton(announcement_str)
 admin_markup.add(add_schedule, scrape, blacklist, unblacklist, announcement, cancel_b)
-
 
 outages_group_str = "Відключення"
 stats_group_str = "Статистика"

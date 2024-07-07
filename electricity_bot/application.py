@@ -21,6 +21,7 @@ from electricity_bot.vars import (
     blacklist_str,
     unblacklist_str,
     announcement_str,
+    feedback_str,
 )
 from electricity_bot.time import get_date, get_time
 from electricity_bot.logger import TGEBLogger
@@ -188,6 +189,14 @@ class Application(telebot.TeleBot):
         def see_schedule(message: Message) -> None:
             if self.user_storage.is_authorized(message.from_user.id):
                 commands.see_schedule(message, self)
+            else:
+                commands.not_authorized(message, self)
+
+        @self.message_handler(regexp=feedback_str)
+        @self.message_handler(commands=["feedback"])
+        def handle_other(message: Message) -> None:
+            if self.user_storage.is_authorized(message.from_user.id):
+                commands._feedback(message, self)
             else:
                 commands.not_authorized(message, self)
 

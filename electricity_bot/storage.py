@@ -142,7 +142,9 @@ class JSONFileScheduleStorage(JSONStorage):
         else:
             return False
 
-    def get_schedule(self, date: str = get_date()):
+    def get_schedule(self, date: str = None):
+        if date == None:
+            date = get_date()
         return self.read()[date]
 
 
@@ -197,8 +199,12 @@ class JSONFileOutageStorage(JSONStorage):
     def exists(self, outage: int = 1, date: str = None) -> bool:
         if date == None:
             date = get_date()
-        if str(outage) in self.read()[date].keys():
-            return True
+        data = self.read()
+        if date in data.keys():
+            if str(outage) in self.read()[date].keys():
+                return True
+            else:
+                return False
         else:
             return False
 
