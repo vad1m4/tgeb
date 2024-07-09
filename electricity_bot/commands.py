@@ -251,6 +251,7 @@ def feedback(message: types.Message, bot: TeleBot) -> None:
             f"✅ Відгук успішно залишено!",
             parse_mode="html",
         )
+        generic(message, bot)
         bot.send_message(
             admins_list[0],
             f'❕ {message.from_user.first_name} {message.from_user.last_name} [{message.from_user.id}] залишили відгук!\n\n"{message.text}"',
