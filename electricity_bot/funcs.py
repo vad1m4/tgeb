@@ -58,7 +58,7 @@ def termux_loop(bot: TeleBot, run_event: Event) -> None:
                 bot.last_power_off = unix
                 bot.last_power_off_local = unix
                 logger.info(f"Electricity is out. Notifying users.")
-                logger.warning(f"Outage Electricity is out.")
+                logger.info(f"otg Electricity is out.")
                 for user_id in bot.user_storage.read()["outages"]:
                     try:
                         logger.info(f"Notified: {user_id}")
@@ -95,7 +95,7 @@ def termux_loop(bot: TeleBot, run_event: Event) -> None:
                 bot.last_power_on = unix
                 bot.outages_storage.save(bot.last_power_off_local, bot.last_power_on)
                 logger.info(f"Electricity is back on. Notifying users.")
-                logger.warning(f"Outage Electricity is back on.")
+                logger.info(f"otg Electricity is back on.")
                 for user_id in bot.user_storage.read()["outages"]:
                     try:
                         logger.info(f"Notified: {user_id}")

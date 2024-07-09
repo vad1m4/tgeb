@@ -16,14 +16,8 @@ def setup_logging(log_file: str, level: int):
                 "format": "[%(asctime)s] %(levelname)s at %(module)s - %(message)s",
                 "datefmt": "%Y-%m-%d %H:%M:%S%z",
             },
-            "user_cmd": {
-                "()": "electricity_bot.logger.UserCmdFormatter",
-                "format": "[%(asctime)s] %(levelname)s at %(module)s - %(message)s",
-                "datefmt": "%Y-%m-%d %H:%M:%S%z",
-            },
-            "outage": {
-                "()": "electricity_bot.logger.OutageFormatter",
-                "format": "[%(asctime)s] %(levelname)s at %(module)s - %(message)s",
+            "custom": {
+                "()": "electricity_bot.logger.CustomFormatter",
                 "datefmt": "%Y-%m-%d %H:%M:%S%z",
             },
         },
@@ -57,14 +51,14 @@ def setup_logging(log_file: str, level: int):
             "file_outage": {
                 "class": "logging.FileHandler",
                 "level": "INFO",
-                "formatter": "simple",
+                "formatter": "custom",
                 "filters": ["outage"],
                 "filename": f"outage_logs/{log_file}",
             },
             "file_user_actions": {
                 "class": "logging.FileHandler",
                 "level": "INFO",
-                "formatter": "simple",
+                "formatter": "custom",
                 "filters": ["user_cmd"],
                 "filename": f"user_action_logs/{log_file}",
             },
@@ -88,19 +82,13 @@ class UserCmdFilter(logging.Filter):
 class OutageFilter(logging.Filter):
     @override
     def filter(self, record: logging.LogRecord) -> bool | logging.LogRecord:
-        return record.message[:6] == "Outage"
+        return record.message[:3] == "otg"
 
 
-class UserCmdFormatter(logging.Formatter):
+class CustomFormatter(logging.Formatter):
     @override
     def format(self, record: logging.LogRecord) -> str:
-        return record.message[3:]
-
-
-class OutageFormatter(logging.Formatter):
-    @override
-    def format(self, record: logging.LogRecord) -> str:
-        return record.message[6:]
+        return f"[{record.asctime}] {record.levelname} at {record.module} - {record.message[4:]}"
 
 
 def log_cmd(message: Message, name: str, logger: logging.Logger):
