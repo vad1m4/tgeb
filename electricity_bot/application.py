@@ -22,6 +22,7 @@ from electricity_bot.vars import (
     unblacklist_str,
     announcement_str,
     feedback_str,
+    stats_str,
 )
 from electricity_bot.time import get_date, get_time
 from electricity_bot.logger import TGEBLogger
@@ -262,6 +263,14 @@ class Application(telebot.TeleBot):
         def unblock(message: Message) -> None:
             if self.is_admin(message.from_user.id):
                 admin_cmd._announce_(message, self)
+            else:
+                admin_cmd.not_admin(message, self)
+
+        @self.message_handler(regexp=stats_str)
+        @self.message_handler(commands=["stats"])
+        def stats(message: Message):
+            if self.is_admin(message.from_user.id):
+                funcs.stats(self, get_date(-1), message)
             else:
                 admin_cmd.not_admin(message, self)
 

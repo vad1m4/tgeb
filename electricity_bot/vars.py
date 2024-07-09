@@ -78,6 +78,7 @@ current_date_str = "Сьогоднішня дата"
 blacklist_str = "Заблокувати номер"
 unblacklist_str = "Розблокувати номер"
 announcement_str = "Оголошення"
+stats_str = "Статистика"
 
 admin_markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
 add_schedule = types.KeyboardButton(add_schedule_str)
@@ -86,7 +87,10 @@ current_date = types.KeyboardButton(current_date_str)
 blacklist = types.KeyboardButton(blacklist_str)
 unblacklist = types.KeyboardButton(unblacklist_str)
 announcement = types.KeyboardButton(announcement_str)
-admin_markup.add(add_schedule, scrape, blacklist, unblacklist, announcement, cancel_b)
+stats = types.KeyboardButton(stats_str)
+admin_markup.add(
+    add_schedule, scrape, blacklist, unblacklist, announcement, stats, cancel_b
+)
 
 outages_group_str = "Відключення"
 stats_group_str = "Статистика"

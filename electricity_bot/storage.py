@@ -217,6 +217,5 @@ class JSONFileOutageStorage(JSONStorage):
     def lasted(self, outage: int = 1, date: str = None) -> int:
         if date == None:
             date = get_date()
-        if self.exists(outage):
-            data = self.read()
-            return int(data[date][str(outage)]["end"] - data[date][outage]["start"])
+        data = self.read()
+        return int(data[date][str(outage)]["end"] - data[date][outage]["start"])
