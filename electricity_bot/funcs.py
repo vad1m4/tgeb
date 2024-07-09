@@ -14,6 +14,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 def termux_loop(bot: TeleBot, run_event: Event) -> None:
     if bot.debug_termux:
         import random

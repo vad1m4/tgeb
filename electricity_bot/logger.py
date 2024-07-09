@@ -14,22 +14,22 @@ def setup_logging(log_file: str, level: int):
         "formatters": {
             "simple": {
                 "format": "[%(asctime)s] %(levelname)s at %(module)s - %(message)s",
-                "datefmt": "%Y-%m-%dT%H:%M:%S%z",
+                "datefmt": "%Y-%m-%d %H:%M:%S%z",
             },
             "user_cmd": {
                 "()": "electricity_bot.logger.UserCmdFormatter",
                 "format": "[%(asctime)s] %(levelname)s at %(module)s - %(message)s",
-                "datefmt": "%Y-%m-%dT%H:%M:%S%z",
+                "datefmt": "%Y-%m-%d %H:%M:%S%z",
             },
             "outage": {
                 "()": "electricity_bot.logger.OutageFormatter",
                 "format": "[%(asctime)s] %(levelname)s at %(module)s - %(message)s",
-                "datefmt": "%Y-%m-%dT%H:%M:%S%z",
+                "datefmt": "%Y-%m-%d %H:%M:%S%z",
             },
         },
         "filters": {
             "user_cmd": {"()": "electricity_bot.logger.UserCmdFilter"},
-            "outage_cmd": {"()": "electricity_bot.logger.OutageFilter"},
+            "outage": {"()": "electricity_bot.logger.OutageFilter"},
         },
         "handlers": {
             "queue_handler": {
@@ -42,7 +42,7 @@ def setup_logging(log_file: str, level: int):
                 ],
                 "respect_handler_level": True,
             },
-            "stderr": {
+            "stdout": {
                 "class": "logging.StreamHandler",
                 "level": level,
                 "formatter": "simple",
@@ -50,7 +50,7 @@ def setup_logging(log_file: str, level: int):
             },
             "file_general": {
                 "class": "logging.FileHandler",
-                "level": level,
+                "level": "INFO",
                 "formatter": "simple",
                 "filename": f"general_logs/{log_file}",
             },
@@ -58,7 +58,7 @@ def setup_logging(log_file: str, level: int):
                 "class": "logging.FileHandler",
                 "level": "INFO",
                 "formatter": "simple",
-                "filters": ["user_cmd"],
+                "filters": ["outage"],
                 "filename": f"outage_logs/{log_file}",
             },
             "file_user_actions": {
@@ -103,42 +103,7 @@ class OutageFormatter(logging.Formatter):
         return record.message[6:]
 
 
-# def add_logger(
-#     name: str,
-#     log_file: str,
-#     do_stream: bool = False,
-#     level=logging.INFO,
-# ):
-#     logger = logging.Logger(name, level)
-#     formatter = logging.Formatter(
-#         "[%(asctime)s] %(levelname)s at %(module)s - %(message)s",
-#         "%Y-%m-%dT%H:%M:%S%z",
-#     )
-#     try:
-#         handler = logging.FileHandler(log_file)
-#         handler.setFormatter(formatter)
-#     except FileNotFoundError:
-#         dirname = log_file.split("/")[0]
-#         os.makedirs(dirname)
-#         handler = logging.getHandlerByName()
-#         handler.setFormatter(formatter)
-#     if do_stream:
-#         stream = logging.StreamHandler()
-#         stream.setFormatter(formatter)
-#         logger.addHandler(stream)
-
-#     logger.setLevel(level)
-#     logger.addHandler(handler)
-
-#     logger.info(f"{name} initialized.")
-
-#     return logger
-
-
-def log_cmd(message: Message, name: str, _logger: str | Any = None):
-    if _logger == None:
-        _logger = "user_actions_logger"
-    logger = logging.getLogger(_logger)
+def log_cmd(message: Message, name: str, logger: logging.Logger):
     logger.info(
         f"cmd {message.from_user.first_name} {message.from_user.last_name} [{message.from_user.id}] has used the following command: {name}"
     )

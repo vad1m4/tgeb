@@ -6,6 +6,6 @@ electricity_bot/_termux_api.py
 .venv
 *.json
 !electricity_bot/*.json
-temp.py
+temp.*
 .mypy_cache
 

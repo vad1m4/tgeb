@@ -17,14 +17,6 @@ def main() -> None:
     file_name = f"bot_{get_date()}_{get_time('-')}.txt"
 
     setup_logging(file_name, DEBUG if args.debug else INFO)
-    # add_logger(
-    #     "general_logger",
-    #     f"general_logs/{file_name}",
-    #     True,
-    #     ,
-    # )
-    # add_logger("outage_logger", f"outage_logs/{file_name}")
-    # add_logger("user_action_logger", f"user_action_logs/{file_name}")
 
     token = TOKEN_DEBUG if args.debug else TOKEN
     app = Application(token, args.debug, args.debug_termux)
