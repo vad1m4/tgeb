@@ -2,6 +2,7 @@ from pathlib import Path
 import json
 from abc import ABC, abstractmethod
 from electricity_bot.time import get_date, get_unix, unix_to_date
+from typing import Any
 
 
 class JSONStorage(ABC):
@@ -167,7 +168,7 @@ class JSONFileOutageStorage(JSONStorage):
         with open(self._jsonfile, "w", encoding="utf-8") as f:
             json.dump(outages, f, indent=4)
 
-    def save(self, power_off: int, power_on: int = None) -> None:
+    def save(self, power_off: int, power_on: int | Any = None) -> None:
         if power_on == None:
             power_on = get_unix()
         date = unix_to_date(power_off)
@@ -182,7 +183,7 @@ class JSONFileOutageStorage(JSONStorage):
         }
         self.write(general_outages)
 
-    def temp(self, _type: str = "start", time: int = None):
+    def temp(self, _type: str = "start", time: int | Any = None):
         if time == None:
             time = get_unix()
         general_outages = self.read()
@@ -195,7 +196,7 @@ class JSONFileOutageStorage(JSONStorage):
         del outages[date][outage]
         self.write(outages)
 
-    def exists(self, outage: int = 1, date: str = None) -> bool:
+    def exists(self, outage: int = 1, date: str | Any = None) -> bool:
         if date == None:
             date = get_date()
         data = self.read()
@@ -207,13 +208,13 @@ class JSONFileOutageStorage(JSONStorage):
         else:
             return False
 
-    def get_outage(self, outage: int = 1, date: str = None) -> dict[str:int]:
+    def get_outage(self, outage: int = 1, date: str | Any = None) -> dict[str:int]:
         if date == None:
             date = get_date()
         if self.exists(outage):
             return self.read()[date][outage]
 
-    def lasted(self, outage: int = 1, date: str = None) -> int:
+    def lasted(self, outage: int = 1, date: str | Any = None) -> int:
         if date == None:
             date = get_date()
         data = self.read()

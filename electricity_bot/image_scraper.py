@@ -5,10 +5,11 @@ from time import sleep  # type: ignore
 
 import logging
 
+logger = logging.getLogger(__name__)
+
 
 class TGEBImageScraper:
-    def __init__(self, _logger: logging.Logger, url: str) -> None:
-        self.logger = _logger
+    def __init__(self, url: str) -> None:
         self.chrome_options = webdriver.ChromeOptions()
         self.chrome_options.add_argument("--no-sandbox")
         self.chrome_options.add_argument("--disable-dev-shm-usage")
@@ -37,5 +38,5 @@ class TGEBImageScraper:
                         src = img.get("src")
                         if src:
                             image_urls.append(src)
-        self.logger.info(f"Found {len(image_urls)} image URLs")
+        logger.info(f"Found {len(image_urls)} image URLs")
         return image_urls

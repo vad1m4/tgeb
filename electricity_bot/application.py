@@ -26,20 +26,22 @@ from electricity_bot.vars import (
     stats_str,
 )
 from electricity_bot.time import get_date, get_time
-from electricity_bot.logger import TGEBLogger
+
+# from electricity_bot.logger import add_logger
 from electricity_bot.config import admins
 import electricity_bot.commands as commands
 import electricity_bot.funcs as funcs
 from electricity_bot.image_scraper import TGEBImageScraper
 import electricity_bot.admin_commands as admin_cmd
 
-from logging import INFO, DEBUG
-
 from pathlib import Path
 
+import logging
 import threading
-
 import schedule
+
+
+logger = logging.getLogger(__name__)
 
 
 class Application(TeleBot):
@@ -47,65 +49,22 @@ class Application(TeleBot):
         self, token: str, debug: bool = False, debug_termux: bool = False
     ) -> None:
 
-        ### Loggers
-
         self.debug = debug
         self.debug_termux = debug_termux
 
-        if self.debug:
-            self.level = DEBUG
-        else:
-            self.level = INFO
-
-        self.general_logger = TGEBLogger(
-            "General logger",
-            f"general_logs/bot_{get_date()}_{get_time('-')}.txt",
-            True,
-            self.level,
-        )
-
-        self.outage_logger = TGEBLogger(
-            "Outage logger", f"outage_logs/bot_{get_date()}_{get_time('-')}.txt"
-        )
-        self.general_logger.init("Outage logger", True, self.level)
-
-        self.user_action_logger = TGEBLogger(
-            "User action logger",
-            f"user_action_logs/bot_{get_date()}_{get_time('-')}.txt",
-        )
-        self.general_logger.init("User action logger", True, self.level)
-
         ### Telegram bot init
 
-        exception_handler = TGEBExceptionHandler(self.general_logger)
+        exception_handler = TGEBExceptionHandler()
 
-        try:
-            super().__init__(token, exception_handler=exception_handler)
-            self.general_logger.init("Telegram bot", True)
-        except Exception as e:
-            self.general_logger.init("Telegram bot", False, e)
-            exit()
+        super().__init__(token, exception_handler=exception_handler)
+        logger.info("Telegram bot initialized")
 
         ### Storage init
 
-        try:
-            self.user_storage = JSONFileUserStorage(Path.cwd() / "users.json")
-            self.general_logger.init("User storage", True)
-        except Exception as e:
-            self.general_logger.init("User storage", False, e)
-            exit()
-        try:
-            self.id_storage = JSONFileScheduleStorage(Path.cwd() / "schedules.json")
-            self.general_logger.init("Schedule storage", True)
-        except Exception as e:
-            self.general_logger.init("Schedule storage", False, e)
-            exit()
-        try:
-            self.outages_storage = JSONFileOutageStorage(Path.cwd() / "outages.json")
-            self.general_logger.init("Outages storage", True)
-        except Exception as e:
-            self.general_logger.init("Outages storage", False, e)
-            exit()
+        self.user_storage = JSONFileUserStorage(Path.cwd() / "users.json")
+        self.id_storage = JSONFileScheduleStorage(Path.cwd() / "schedules.json")
+        self.outages_storage = JSONFileOutageStorage(Path.cwd() / "outages.json")
+        logger.info("Storage initialized")
 
         ### Electricity checker loop init
 
@@ -118,14 +77,7 @@ class Application(TeleBot):
         self.state_v: bool = bool
         self._init_loop()
 
-        try:
-            self.image_scraper = TGEBImageScraper(
-                self.general_logger, "https://poweron.loe.lviv.ua/"
-            )
-            self.general_logger.init("Image scraper", True)
-        except Exception as e:
-            self.general_logger.init("Image scraper", False, e)
-            exit()
+        self.image_scraper = TGEBImageScraper("https://poweron.loe.lviv.ua/")
 
         self._init_schedule()
 
@@ -291,20 +243,16 @@ class Application(TeleBot):
     ### Electricity checker loop init
 
     def _init_loop(self):
-        try:
-            run_event = threading.Event()
-            run_event.set()
-            t = threading.Thread(
-                target=funcs.termux_loop,
-                args=(
-                    self,
-                    run_event,
-                ),
-            )
-            t.start()
-        except Exception as e:
-            self.general_logger.init("Electricity checker loop", False)
-            exit()
+        run_event = threading.Event()
+        run_event.set()
+        t = threading.Thread(
+            target=funcs.termux_loop,
+            args=(
+                self,
+                run_event,
+            ),
+        )
+        t.start()
 
     def _init_schedule(self):
 
@@ -312,20 +260,13 @@ class Application(TeleBot):
 
         schedule.every().day.at("22:00", "Europe/Kiev").do(funcs.scrape_job, self)
 
-        try:
-            run_event = threading.Event()
-            run_event.set()
-            t = threading.Thread(
-                target=funcs.schedule_loop,
-                args=(
-                    self,
-                    run_event,
-                ),
-            )
-            t.start()
-        except Exception as e:
-            self.general_logger.init("Schedule loop", False)
-            exit()
+        run_event = threading.Event()
+        run_event.set()
+        t = threading.Thread(
+            target=funcs.schedule_loop,
+            args=(run_event,),
+        )
+        t.start()
 
     ### Check if user_id is in self.admins
 

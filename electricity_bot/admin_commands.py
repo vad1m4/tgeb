@@ -10,10 +10,15 @@ from electricity_bot.vars import (
     outages_group_str,
 )
 from electricity_bot.time import get_date, get_time
+from electricity_bot.logger import log_cmd
+
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def not_admin(message: types.Message, bot: TeleBot) -> None:
-    bot.user_action_logger.info(
+    logger.info(
         f'{message.from_user.first_name} {message.from_user.last_name} [{message.from_user.id}] has used the following command: "not_admin"'
     )
     bot.send_message(
@@ -24,7 +29,7 @@ def not_admin(message: types.Message, bot: TeleBot) -> None:
 
 
 def menu(message: types.Message, bot: TeleBot) -> None:
-    bot.user_action_logger.info(
+    logger.info(
         f'{message.from_user.first_name} {message.from_user.last_name} [{message.from_user.id}] has used the following command: "admin_menu"'
     )
     bot.send_message(
@@ -36,7 +41,7 @@ def menu(message: types.Message, bot: TeleBot) -> None:
 
 
 def _blacklist_(message: types.Message, bot: TeleBot) -> None:
-    bot.user_action_logger.bot.user_action_logger.info(
+    logger.info(
         f'{message.from_user.first_name} {message.from_user.last_name} [{message.from_user.id}] has used the following command: "blacklist 1"'
     )
     bot.send_message(
@@ -49,7 +54,7 @@ def _blacklist_(message: types.Message, bot: TeleBot) -> None:
 
 
 def _blacklist(message: types.Message, bot: TeleBot) -> None:
-    bot.user_action_logger.cmd(message, "blacklist 2")
+    log_cmd(message, "blacklist 2")
     try:
         if message.text[0] == "+":
             number = message.text
@@ -73,12 +78,12 @@ def _blacklist(message: types.Message, bot: TeleBot) -> None:
 
 
 def blacklist(message: types.Message, bot: TeleBot, number: int | str) -> None:
-    bot.user_action_logger.cmd(message, "blacklist 3")
+    log_cmd(message, "blacklist 3")
     bot.user_storage.blacklist(number, message.text)
-    bot.user_action_logger.info(
+    logger.info(
         f"Admin {message.from_user.first_name} {message.from_user.last_name} [{message.from_user.id}] blocked {number}, reason: {message.text}"
     )
-    bot.general_logger.info(
+    logger.info(
         f"Admin {message.from_user.first_name} {message.from_user.last_name} [{message.from_user.id}] blocked {number}, reason: {message.text}"
     )
     bot.send_message(
@@ -90,7 +95,7 @@ def blacklist(message: types.Message, bot: TeleBot, number: int | str) -> None:
 
 
 def _unblacklist(message: types.Message, bot: TeleBot) -> None:
-    bot.user_action_logger.cmd(message, "unblacklist 1")
+    log_cmd(message, "unblacklist 1")
     bot.send_message(
         message.from_user.id,
         f"🤖 Введіть номер або User ID користувача, якого ви хочете розблокувати.",
@@ -101,7 +106,7 @@ def _unblacklist(message: types.Message, bot: TeleBot) -> None:
 
 
 def unblacklist(message: types.Message, bot: TeleBot) -> None:
-    bot.user_action_logger.cmd(message, "unblacklist 2")
+    log_cmd(message, "unblacklist 2")
     number = message.text
     if bot.user_storage.unblacklist(number):
         bot.send_message(
@@ -132,7 +137,7 @@ def add_schedule(
     message: types.Message,
     bot: TeleBot,
 ) -> None:
-    bot.user_action_logger.cmd(message, "add_schedule")
+    log_cmd(message, "add_schedule")
     markup = schedules_markup(bot)
     bot.send_message(
         message.from_user.id,
@@ -198,7 +203,7 @@ def handle_photos(
 ) -> None:
     if date == None:
         date = get_date()
-    bot.user_action_logger.cmd(message, "handle_photos")
+    log_cmd(message, "handle_photos")
     if message.content_type == "photo":
         file_id = message.photo[-1].file_id
         bot.id_storage.save(file_id, date)
@@ -224,7 +229,7 @@ def handle_photos(
 
 
 def _announce_(message: types.Message, bot: TeleBot) -> None:
-    bot.user_action_logger.cmd(message, "announce 1")
+    log_cmd(message, "announce 1")
     bot.send_message(
         message.from_user.id,
         f"📲 Оберіть групу користувачів, для яких ви хочете створити оголошення.",
@@ -235,7 +240,7 @@ def _announce_(message: types.Message, bot: TeleBot) -> None:
 
 
 def _announce(message: types.Message, bot: TeleBot):
-    bot.user_action_logger.cmd(message, "announce 2")
+    log_cmd(message, "announce 2")
     if message.text == "Назад":
         menu(message, bot)
     elif message.text == outages_group_str or message.text == stats_group_str:
@@ -261,14 +266,14 @@ def _announce(message: types.Message, bot: TeleBot):
 
 
 def announce(message: types.Message, bot: TeleBot, group: str):
-    bot.user_action_logger.cmd(message, "announce 3")
+    log_cmd(message, "announce 3")
     if message.text == "Назад":
         menu(message, bot)
     else:
-        bot.user_action_logger.info(
+        logger.info(
             f'Admin {message.from_user.first_name} {message.from_user.last_name} [{message.from_user.id}] announced to "{group}", text: {message.text}'
         )
-        bot.general_logger.info(
+        logger.info(
             f'Admin {message.from_user.first_name} {message.from_user.last_name} [{message.from_user.id}] announced to "{group}", text: {message.text}'
         )
         for user_id in bot.user_storage.read()[group]:
@@ -278,26 +283,26 @@ def announce(message: types.Message, bot: TeleBot, group: str):
                     f"⚠️ Оголошення від адміністратора:\n\n{message.text}",
                     parse_mode="html",
                 )
-                bot.general_logger.info(f"Notified {user_id}")
+                logger.info(f"Notified {user_id}")
             except apihelper.ApiTelegramException as e:
                 if e.error_code == 403:
-                    bot.general_logger.error(
+                    logger.error(
                         f"{user_id} has blocked the bot. Removing them from the list"
                     )
                     bot.user_storage.delete(user_id, group)
                 elif e.error_code in [401, 404]:
-                    bot.general_logger.error(
+                    logger.error(
                         f"Could not access {user_id}. Removing them from the list"
                     )
                     bot.user_storage.delete(user_id, group)
                 continue
             except Exception as e:
-                bot.general_logger.error(
+                logger.error(
                     f"{e} occured. Take actions regarding this error as soon as possible."
                 )
                 continue
 
-        bot.general_logger.info(f"Notified users")
+        logger.info(f"Notified users")
         bot.send_message(
             message.from_user.id,
             f"✅ {len(bot.user_storage.read()[group])} отримали ваше оголошення.",

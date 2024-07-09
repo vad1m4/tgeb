@@ -8,15 +8,19 @@ from electricity_bot.vars import (
 from electricity_bot.funcs import generic
 from electricity_bot.time import get_date, get_time
 from electricity_bot.config import admins as admins_list
+from electricity_bot.logger import log_cmd
 
 from telebot import TeleBot, types  # type: ignore
 
+import logging
+
+logger = logging.getLogger(__name__)
 
 ### User commands
 
 
 def start(message: types.Message, bot: TeleBot) -> None:
-    bot.user_action_logger.cmd(message, "start")
+    log_cmd(message, "start", logger)
     name = message.from_user.first_name
     bot.send_message(
         message.chat.id,
@@ -27,7 +31,7 @@ def start(message: types.Message, bot: TeleBot) -> None:
 
 
 def not_authorized(message: types.Message, bot: TeleBot) -> None:
-    bot.user_action_logger.cmd(message, "not authorized")
+    log_cmd(message, "not authorized", logger)
     bot.send_message(
         message.chat.id,
         f" \n\n❌ Ви не авторизовані. Для початку роботи зі мною, авторизуйтеся за допомогою номеру телефона.",
@@ -37,17 +41,17 @@ def not_authorized(message: types.Message, bot: TeleBot) -> None:
 
 
 def authorize(message: types.Message, bot: TeleBot) -> None:
-    bot.user_action_logger.cmd(message, "authorize")
+    log_cmd(message, "authorize", logger)
     user_id = message.from_user.id
     generic_markup = _generic_markup(bot, message.from_user.id)
     if not bot.user_storage.is_authorized(user_id):
         phone_num = message.contact.phone_number
 
         if bot.user_storage.authorize(user_id, phone_num):
-            bot.user_action_logger.info(
+            logger.info(
                 f"Successfully authorised user {message.from_user.first_name} {message.from_user.last_name} via phone number ({phone_num})"
             )
-            bot.general_logger.info(
+            logger.info(
                 f"Successfully authorised user {message.from_user.first_name} {message.from_user.last_name} via phone number ({phone_num})"
             )
             bot.send_message(
@@ -57,10 +61,10 @@ def authorize(message: types.Message, bot: TeleBot) -> None:
                 reply_markup=generic_markup,
             )
         else:
-            bot.user_action_logger.info(
+            logger.info(
                 f"Failed to authorise user {message.from_user.first_name} {message.from_user.last_name} via phone number ({phone_num}): phone number blacklisted"
             )
-            bot.general_logger.info(
+            logger.info(
                 f"Failed to authorise user {message.from_user.first_name} {message.from_user.last_name} via phone number ({phone_num}): phone number blacklisted"
             )
             bot.send_message(
@@ -90,7 +94,7 @@ def handle_other(message: types.Message, bot: TeleBot) -> None:
 
 def subscribe(message: types.Message, bot: TeleBot) -> None:
     generic_markup = _generic_markup(bot, message.from_user.id)
-    bot.user_action_logger.cmd(message, "subscribe")
+    log_cmd(message, "subscribe", logger)
     if not bot.user_storage.subscribed(message.from_user.id, "outages"):
         bot.user_storage.save(message.chat.id, "outages")
         markup = notifications_markup(bot, message.from_user.id)
@@ -111,7 +115,7 @@ def subscribe(message: types.Message, bot: TeleBot) -> None:
 
 
 def notifications(message: types.Message, bot: TeleBot) -> None:
-    bot.user_action_logger.cmd(message, "notifications")
+    log_cmd(message, "notifications", logger)
     markup = notifications_markup(bot, message.from_user.id)
     bot.send_message(
         message.chat.id,
@@ -122,7 +126,7 @@ def notifications(message: types.Message, bot: TeleBot) -> None:
 
 
 def unsubscribe(message: types.Message, bot: TeleBot) -> None:
-    bot.user_action_logger.cmd(message, "unsubscribe")
+    log_cmd(message, "unsubscribe", logger)
     if bot.user_storage.subscribed(message.from_user.id, "outages"):
         bot.user_storage.delete(message.from_user.id, "outages")
         markup = notifications_markup(bot, message.from_user.id)
@@ -143,7 +147,7 @@ def unsubscribe(message: types.Message, bot: TeleBot) -> None:
 
 
 def subscribe_stats(message: types.Message, bot: TeleBot) -> None:
-    bot.user_action_logger.cmd(message, "subscribe_stats")
+    log_cmd(message, "subscribe_stats", logger)
     if not bot.user_storage.subscribed(message.from_user.id, "stats"):
         bot.user_storage.save(message.chat.id, "stats")
         markup = notifications_markup(bot, message.from_user.id)
@@ -165,7 +169,7 @@ def subscribe_stats(message: types.Message, bot: TeleBot) -> None:
 
 def unsubscribe_stats(message: types.Message, bot: TeleBot) -> None:
     markup = notifications_markup(bot, message.from_user.id)
-    bot.user_action_logger.cmd(message, "unsubscribe_stats")
+    log_cmd(message, "unsubscribe_stats", logger)
     if bot.user_storage.subscribed(message.from_user.id, "stats"):
         bot.user_storage.delete(message.from_user.id, "stats")
         markup = notifications_markup(bot, message.from_user.id)
@@ -187,7 +191,7 @@ def unsubscribe_stats(message: types.Message, bot: TeleBot) -> None:
 
 def state(message: types.Message, bot: TeleBot) -> None:
     generic_markup = _generic_markup(bot, message.from_user.id)
-    bot.user_action_logger.cmd(message, "state")
+    log_cmd(message, "state", logger)
     current_time = get_time()
     if bot.state_v == True:
         bot.send_message(
@@ -207,7 +211,7 @@ def state(message: types.Message, bot: TeleBot) -> None:
 
 def see_schedule(message: types.Message, bot: TeleBot) -> None:
     generic_markup = _generic_markup(bot, message.from_user.id)
-    bot.user_action_logger.cmd(message, "see_schedule")
+    log_cmd(message, "see_schedule", logger)
     if bot.id_storage.exists():
         bot.send_photo(
             message.chat.id,

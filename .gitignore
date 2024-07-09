@@ -5,5 +5,7 @@ electricity_bot/_termux_api.py
 *_logs
 .venv
 *.json
+!electricity_bot/*.json
 temp.py
+.mypy_cache
 
