@@ -1,6 +1,8 @@
 from selenium import webdriver
 from bs4 import BeautifulSoup
-import time
+
+from time import sleep  # type: ignore
+
 import logging
 
 
@@ -16,7 +18,7 @@ class TGEBImageScraper:
     def scrape_images(self) -> list[str]:
         self.driver = webdriver.Chrome(options=self.chrome_options)
         self.driver.get(self.url)
-        time.sleep(5)
+        sleep(5)
         page_source = self.driver.page_source
         self.driver.quit()
         soup = BeautifulSoup(page_source, "html.parser")

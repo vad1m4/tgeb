@@ -1,6 +1,7 @@
-#-*-coding:utf8;-*-
-#py3
-#termux
+# -*-coding:utf8;-*-
+# py3
+# termux
+# type: ignore
 
 """
 termux_api.py - Use subprocess to call termux-api
@@ -81,73 +82,92 @@ wifi_scaninfo()
 """
 
 import subprocess
-import json ## to parse returned json from volume_get
-from collections import namedtuple ## to return pretty data
+import json  ## to parse returned json from volume_get
+from collections import namedtuple  ## to return pretty data
 
 TermuxApiResult = namedtuple("termux_api_result", "result error")
 
+
 def _stdout_err(args, **kwargs):
     ## print("_stdout_err args:", args) ## debug
-    proc = subprocess.run(args, capture_output = True, **kwargs)
+    proc = subprocess.run(args, capture_output=True, **kwargs)
     try:
         proc.check_returncode()
     except subprocess.CalledProcessError as err:
         return proc.stdout if proc.stdout else None, err
     return proc.stdout if proc.stdout else None, None
-    
+
+
 def _run_err(args, **kwargs):
     stdout, err = _stdout_err(args, **kwargs)
-    if err is not None: return TermuxApiResult(stdout, err)
-    return TermuxApiResult(None, stdout if stdout and stdout != b'\n' else None)
+    if err is not None:
+        return TermuxApiResult(stdout, err)
+    return TermuxApiResult(None, stdout if stdout and stdout != b"\n" else None)
     ## termux-wifi-enable prints b'\n'
+
 
 def _run_plain(args):
     stdout, err = _stdout_err(args)
-    if err is not None: return TermuxApiResult(stdout, err)
+    if err is not None:
+        return TermuxApiResult(stdout, err)
     return TermuxApiResult(stdout.decode("utf-8") if stdout else None, None)
+
 
 def _run_json(args):
     stdout, err = _stdout_err(args)
-    if err is not None: return TermuxApiResult(stdout, err) 
+    if err is not None:
+        return TermuxApiResult(stdout, err)
     try:
         return TermuxApiResult(json.loads(stdout), None)
     except Exception as err:
         return TermuxApiResult(stdout, err)
 
+
 def battery_status():
     return _run_json(["termux-battery-status"])
+
 
 def brightness(brightness):
     return _run_err(["termux-brightness", str(brightness)])
 
+
 def camera_info():
     return _run_json(["termux-camera-info"])
 
-def camera_photo(savepath, camera_id = 0):
+
+def camera_photo(savepath, camera_id=0):
     return _run_err(["termux-camera-photo", "-c", str(camera_id), str(savepath)])
+
 
 def clipboard_get():
     try:
-        proc = subprocess.run(["termux-clipboard-get"], capture_output = True, check = True)
+        proc = subprocess.run(["termux-clipboard-get"], capture_output=True, check=True)
     except Exception as err:
         return TermuxApiResult(None, err)
     return TermuxApiResult(proc.stdout, None)
 
+
 def clipboard_set(s):
     return _run_err(["termux-clipboard-set", str(s)])
+
 
 def contact_list():
     return _run_json(["termux-contact-list"])
 
+
 def fingerprint():
     return _run_json(["termux-fingerprint"])
+
 
 def infrared_frequencies():
     return _run_json(["termux-infrared-frequencies"])
 
+
 def infrared_transmit(freq, pattern):
-    return _run_err(["termux-infrared-transmit", "-f", str(freq),
-                     ",".join(str(i) for i in pattern)])
+    return _run_err(
+        ["termux-infrared-transmit", "-f", str(freq), ",".join(str(i) for i in pattern)]
+    )
+
 
 def location(provider="gps", request="once"):
     return _run_json(["termux-location", "-p", provider, "-r", request])
@@ -160,6 +180,8 @@ play <file> Plays specified media file
 pause       Pauses playback
 stop        Quits playback
 """
+
+
 def media_player_info():
     res, err = _run_plain(["termux-media-player", "info"])
     if err is not None:
@@ -167,26 +189,39 @@ def media_player_info():
     if res == "No track currently!\n":
         return TermuxApiResult({"Track": None}, None)
     res = [i.split(":", maxsplit=1) for i in res.split("\n") if ":" in i]
-    return TermuxApiResult({i:j for i, j in res}, None)
+    return TermuxApiResult({i: j for i, j in res}, None)
+
+
 """
 def media_player_info():
     return _run_plain(["termux-media-player", "info"])
 """
+
+
 def media_player_play():
     return _run_plain(["termux-media-player", "play"])
+
+
 def media_player_play_file(file):
     return _run_plain(["termux-media-player", "play", str(file)])
+
+
 def media_player_pause():
     return _run_plain(["termux-media-player", "pause"])
+
+
 def media_player_stop():
     return _run_plain(["termux-media-player", "stop"])
 
 
-def media_scan(files, recursive = False, verbose = False):
+def media_scan(files, recursive=False, verbose=False):
     args = ["termux-media-scan"]
-    if recursive: args.append("-r")
-    if verbose: args.append("-v")
-    for f in files: args.append("'%s'" % f)
+    if recursive:
+        args.append("-r")
+    if verbose:
+        args.append("-v")
+    for f in files:
+        args.append("'%s'" % f)
     return _run_plain(args)
 
 
@@ -206,21 +241,46 @@ def media_scan(files, recursive = False, verbose = False):
 -i           Get info about current recording
 -q           Quits recording
 """
-def microphone_record(file = None, limit = None, encoder = None, bitrate = None, sample_rate = None, channel_count = None, default = False):
+
+
+def microphone_record(
+    file=None,
+    limit=None,
+    encoder=None,
+    bitrate=None,
+    sample_rate=None,
+    channel_count=None,
+    default=False,
+):
     args = ["termux-microphone-record"]
-    if default: args.append("-d")
-    opts = [(file, "-f"), (limit, "-l"), (encoder, "-e"), (bitrate, "-b"), (sample_rate, "-r"), (channel_count, "-c")]
+    if default:
+        args.append("-d")
+    opts = [
+        (file, "-f"),
+        (limit, "-l"),
+        (encoder, "-e"),
+        (bitrate, "-b"),
+        (sample_rate, "-r"),
+        (channel_count, "-c"),
+    ]
     for i, j in opts:
         if i is not None:
             args.append(j)
             args.append(str(i))
     return _run_plain(args)
+
+
 def microphone_record_info():
     return _run_json(["termux-microphone-record", "-i"])
+
+
 def microphone_record_quit():
     return _run_plain(["termux-microphone-record", "-q"])
- 
-def share(file, action = None, content_type = None, share_to_default_receiver = False, title = None):
+
+
+def share(
+    file, action=None, content_type=None, share_to_default_receiver=False, title=None
+):
     args = ["termux-share"]
     if action is not None:
         args.append("-a")
@@ -233,19 +293,24 @@ def share(file, action = None, content_type = None, share_to_default_receiver = 
     if title is not None:
         args.append("-t")
         args.append(title)
-    
+
+
 def telephony_call(number):
     return _run_err(["termux-telephony-call", str(number)])
+
 
 def telephony_cellinfo():
     return _run_json(["termux-telephony-cellinfo"])
 
+
 def telephony_deviceinfo():
     return _run_json(["termux-telephony-deviceinfo"])
 
-def toast(s, position = None, short = False, text_color = None, background_color = None):
+
+def toast(s, position=None, short=False, text_color=None, background_color=None):
     args = ["termux-toast"]
-    if short: args.append("-s")
+    if short:
+        args.append("-s")
     if position is not None:
         args.append("-g")
         args.append(position)
@@ -258,27 +323,33 @@ def toast(s, position = None, short = False, text_color = None, background_color
     args.append(str(s))
     return _run_err(args)
 
-def torch(on = True):
+
+def torch(on=True):
     return _run_err(["termux-torch", "on" if on else "off"])
+
 
 def tts_engines():
     return _run_json(["termux-tts-engines"])
 
-def tts_speak(s, timeout = None):
-    return _run_err(["termux-tts-speak", str(s)], timeout = timeout)
 
-def vibrate(duration = None, force = False):
+def tts_speak(s, timeout=None):
+    return _run_err(["termux-tts-speak", str(s)], timeout=timeout)
+
+
+def vibrate(duration=None, force=False):
     args = ["termux-vibrate"]
     if duration is not None:
         args.append("-d")
         args.append(str(duration))
-    if force: args.append("-f")
+    if force:
+        args.append("-f")
     return _run_err(args)
+
 
 def volume_get():
     stream_volume = namedtuple("stream_volume", "volume max_volume")
     try:
-        proc = subprocess.run(["termux-volume"], capture_output = True, check = True)
+        proc = subprocess.run(["termux-volume"], capture_output=True, check=True)
         vols = json.loads(proc.stdout)
         res = {}
         for vol in vols:
@@ -287,17 +358,22 @@ def volume_get():
     except Exception as err:
         return TermuxApiResult(None, err)
 
+
 def volume_set(stream, volume):
     return _run_err(["termux-volume", stream, str(volume)])
+
 
 def wifi_connectioninfo():
     return _run_json(["termux-wifi-connectioninfo"])
 
-def wifi_enable(enable = True):
+
+def wifi_enable(enable=True):
     return _run_err(["termux-wifi-enable", "true" if enable else "false"])
+
 
 def wifi_scaninfo():
     return _run_json(["termux-wifi-scaninfo"])
+
 
 if __name__ == "__main__":
     ## test or debug
@@ -366,22 +442,32 @@ if __name__ == "__main__":
     print("\ntelephony_deviceinfo():")
     print(telephony_deviceinfo())
 
-    print('\ntoast("hello", short = True, position = "bottom", text_color = "black", background_color = "white"):')
-    print(toast("hello", short = True, position = "bottom", text_color = "black", background_color = "white"))
+    print(
+        '\ntoast("hello", short = True, position = "bottom", text_color = "black", background_color = "white"):'
+    )
+    print(
+        toast(
+            "hello",
+            short=True,
+            position="bottom",
+            text_color="black",
+            background_color="white",
+        )
+    )
 
     print("\ntorch(on = True):")
-    print(torch(on = True))
+    print(torch(on=True))
     print("\ntorch(on = False):")
-    print(torch(on = False))
+    print(torch(on=False))
 
     print("\ntts_engines():")
     print(tts_engines())
 
     print('\ntts_speak("hello", timeout = 10):')
-    print(tts_speak("hello", timeout = 10))
+    print(tts_speak("hello", timeout=10))
 
     print("\nvibrate(duration = None, force = False):")
-    print(vibrate(duration = None, force = False)) ## duration: default: 1000(ms)
+    print(vibrate(duration=None, force=False))  ## duration: default: 1000(ms)
 
     print("\nvol = volume_get():")
     vol = volume_get()
@@ -394,15 +480,10 @@ if __name__ == "__main__":
     print(wifi_connectioninfo())
 
     print("\nwifi_enable(enable = True):")
-    print(wifi_enable(enable = True))
+    print(wifi_enable(enable=True))
 
     print("\nwifi_enable(enable = False):")
-    print(wifi_enable(enable = False))
+    print(wifi_enable(enable=False))
 
     print("\nwifi_scaninfo():")
     print(wifi_scaninfo())
-
-
-
-
-

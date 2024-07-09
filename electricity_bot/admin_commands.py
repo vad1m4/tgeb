@@ -1,4 +1,5 @@
-from telebot import types, TeleBot, apihelper
+from telebot import types, TeleBot, apihelper  # type: ignore
+
 from electricity_bot.vars import (
     cancel,
     schedules_markup,
@@ -12,7 +13,9 @@ from electricity_bot.time import get_date, get_time
 
 
 def not_admin(message: types.Message, bot: TeleBot) -> None:
-    bot.user_action_logger.cmd(message, "not admin")
+    bot.user_action_logger.info(
+        f'{message.from_user.first_name} {message.from_user.last_name} [{message.from_user.id}] has used the following command: "not_admin"'
+    )
     bot.send_message(
         message.from_user.id,
         f" \n\n❌ Ви не є адміном цього бота.",
@@ -21,7 +24,9 @@ def not_admin(message: types.Message, bot: TeleBot) -> None:
 
 
 def menu(message: types.Message, bot: TeleBot) -> None:
-    bot.user_action_logger.cmd(message, "admin menu")
+    bot.user_action_logger.info(
+        f'{message.from_user.first_name} {message.from_user.last_name} [{message.from_user.id}] has used the following command: "admin_menu"'
+    )
     bot.send_message(
         message.from_user.id,
         f"💻 Оберіть одну з опцій.",
@@ -31,7 +36,9 @@ def menu(message: types.Message, bot: TeleBot) -> None:
 
 
 def _blacklist_(message: types.Message, bot: TeleBot) -> None:
-    bot.user_action_logger.cmd(message, "blacklist 1")
+    bot.user_action_logger.bot.user_action_logger.info(
+        f'{message.from_user.first_name} {message.from_user.last_name} [{message.from_user.id}] has used the following command: "blacklist 1"'
+    )
     bot.send_message(
         message.from_user.id,
         f"🤖 Введіть номер або User ID користувача, якого ви хочете заблокувати.",

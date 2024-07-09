@@ -8,7 +8,8 @@ from electricity_bot.vars import (
 from electricity_bot.funcs import generic
 from electricity_bot.time import get_date, get_time
 from electricity_bot.config import admins as admins_list
-from telebot import TeleBot, types
+
+from telebot import TeleBot, types  # type: ignore
 
 
 ### User commands

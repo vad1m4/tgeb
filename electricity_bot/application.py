@@ -1,5 +1,6 @@
-import telebot
-from telebot.types import Message
+from telebot import TeleBot  # type: ignore
+from telebot.types import Message  # type: ignore
+
 from electricity_bot.storage import (
     JSONFileUserStorage,
     JSONFileScheduleStorage,
@@ -31,13 +32,17 @@ import electricity_bot.commands as commands
 import electricity_bot.funcs as funcs
 from electricity_bot.image_scraper import TGEBImageScraper
 import electricity_bot.admin_commands as admin_cmd
+
 from logging import INFO, DEBUG
+
 from pathlib import Path
+
 import threading
+
 import schedule
 
 
-class Application(telebot.TeleBot):
+class Application(TeleBot):
     def __init__(
         self, token: str, debug: bool = False, debug_termux: bool = False
     ) -> None:
@@ -104,13 +109,13 @@ class Application(telebot.TeleBot):
 
         ### Electricity checker loop init
 
-        self.last_power_on = self.outages_storage.read()["temp_start"]
-        self.last_power_off = self.outages_storage.read()["temp_end"]
+        self.last_power_on: int = self.outages_storage.read()["temp_start"]
+        self.last_power_off: int = self.outages_storage.read()["temp_end"]
 
-        self.last_power_on_local = self.outages_storage.read()["temp_start"]
-        self.last_power_off_local = self.outages_storage.read()["temp_end"]
+        self.last_power_on_local: int = self.outages_storage.read()["temp_start"]
+        self.last_power_off_local: int = self.outages_storage.read()["temp_end"]
 
-        self.state_v = bool
+        self.state_v: bool = bool
         self._init_loop()
 
         try:

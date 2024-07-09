@@ -1,11 +1,15 @@
-from telebot import TeleBot, types
+from telebot import TeleBot, types  # type: ignore
+from telebot import apihelper
+
 from electricity_bot.vars import generic_choice, _generic_markup
 from electricity_bot.config import ADDRESS, admins
 from electricity_bot.time import get_time, get_unix, get_date
-from telebot import apihelper
 import electricity_bot.formatter as formatter
+
 from threading import Event
+
 import time
+
 import schedule
 
 
