@@ -125,26 +125,16 @@ def current_date(message: types.Message, bot: TeleBot) -> None:
 def add_schedule(
     message: types.Message,
     bot: TeleBot,
-    generic: bool = False,
 ) -> None:
     bot.user_action_logger.cmd(message, "add_schedule")
-    if generic:
-        bot.send_message(
-            message.from_user.id,
-            f"🤖 Надішліть фотографію графіку.",
-            parse_mode="html",
-            reply_markup=cancel,
-        )
-        bot.register_next_step_handler(message, handle_photos, bot, generic)
-    else:
-        markup = schedules_markup(bot)
-        bot.send_message(
-            message.from_user.id,
-            f"Оберіть дату.",
-            parse_mode="html",
-            reply_markup=markup,
-        )
-        bot.register_next_step_handler(message, _add_schedule, bot)
+    markup = schedules_markup(bot)
+    bot.send_message(
+        message.from_user.id,
+        f"Оберіть дату.",
+        parse_mode="html",
+        reply_markup=markup,
+    )
+    bot.register_next_step_handler(message, _add_schedule, bot)
 
 
 def _add_schedule(
@@ -184,7 +174,7 @@ def do_update_schedule(message: types.Message, bot: TeleBot, date: None) -> None
             parse_mode="html",
             reply_markup=cancel,
         )
-        bot.register_next_step_handler(message, handle_photos, bot, date, False)
+        bot.register_next_step_handler(message, handle_photos, bot, date)
     else:
         bot.send_message(
             message.from_user.id,
@@ -198,8 +188,10 @@ def do_update_schedule(message: types.Message, bot: TeleBot, date: None) -> None
 def handle_photos(
     message: types.Message,
     bot: TeleBot,
-    date: str = get_date(),
+    date: str = None,
 ) -> None:
+    if date == None:
+        date = get_date()
     bot.user_action_logger.cmd(message, "handle_photos")
     if message.content_type == "photo":
         file_id = message.photo[-1].file_id
