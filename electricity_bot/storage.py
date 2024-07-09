@@ -1,8 +1,7 @@
 from pathlib import Path
 import json
 from abc import ABC, abstractmethod
-from typing import Iterable
-from electricity_bot.time import get_time, get_date, get_unix, unix_to_date
+from electricity_bot.time import get_date, get_unix, unix_to_date
 
 
 class JSONStorage(ABC):

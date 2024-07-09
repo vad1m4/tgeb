@@ -8,7 +8,6 @@ from electricity_bot.vars import (
     stats_group_str,
     outages_group_str,
 )
-from electricity_bot.funcs import generic
 from electricity_bot.time import get_date, get_time
 
 

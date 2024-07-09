@@ -3,7 +3,6 @@ from electricity_bot.vars import (
     _generic_markup,
     cancel,
     notifications_markup,
-    schedules_markup,
     login_markup,
 )
 from electricity_bot.funcs import generic
