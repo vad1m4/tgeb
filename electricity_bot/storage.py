@@ -47,8 +47,12 @@ class JSONFileUserStorage(JSONStorage):
 
     def delete(self, user_id: int, _type: str) -> None:
         users = self.read()
-        if self.subscribed(user_id, _type):
-            users[_type].remove(user_id)
+        if _type == "users":
+            if self.is_authorized(user_id):
+                users[_type].pop(user_id)
+        else:
+            if self.subscribed(user_id, _type):
+                users[_type].remove(user_id)
         self.write(users)
 
     def subscribed(self, user_id: int, _type: str) -> bool:
@@ -77,7 +81,9 @@ class JSONFileUserStorage(JSONStorage):
         users = self.read()
         users["users"]["blacklist"][phone_number] = reason
         users["users"] = {
-            key: val for key, val in users["users"].items() if val != phone_number
+            key: val
+            for key, val in users["users"].items()
+            if (val != phone_number and key != phone_number)
         }
         self.write(users)
 
@@ -196,7 +202,7 @@ class JSONFileOutageStorage(JSONStorage):
         del outages[date][outage]
         self.write(outages)
 
-    def exists(self, outage: int = 1, date: str | Any = None) -> bool:
+    def exists(self, outage: int | str = 1, date: str | Any = None) -> bool:
         if date == None:
             date = get_date()
         data = self.read()
@@ -208,11 +214,12 @@ class JSONFileOutageStorage(JSONStorage):
         else:
             return False
 
-    def get_outage(self, outage: int = 1, date: str | Any = None) -> dict[str:int]:
+    def get_outage(
+        self, outage: int | str = 1, date: str | Any = None
+    ) -> dict[str:int] | int:
         if date == None:
             date = get_date()
-        if self.exists(outage):
-            return self.read()[date][outage]
+        return self.read()[date][str(outage)]
 
     def lasted(self, outage: int = 1, date: str | Any = None) -> int:
         if date == None:

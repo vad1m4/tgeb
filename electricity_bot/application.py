@@ -25,7 +25,7 @@ from electricity_bot.vars import (
     feedback_str,
     stats_str,
 )
-from electricity_bot.time import get_date, get_time
+from electricity_bot.time import get_date, get_unix
 
 # from electricity_bot.logger import add_logger
 from electricity_bot.config import admins
@@ -41,7 +41,7 @@ import threading
 import schedule
 
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("general")
 
 
 class Application(TeleBot):
@@ -68,11 +68,22 @@ class Application(TeleBot):
 
         ### Electricity checker loop init
 
-        self.last_power_on: int = self.outages_storage.read()["temp_start"]
-        self.last_power_off: int = self.outages_storage.read()["temp_end"]
-
-        self.last_power_on_local: int = self.outages_storage.read()["temp_start"]
-        self.last_power_off_local: int = self.outages_storage.read()["temp_end"]
+        try:
+            temp_start = self.outages_storage.read()["temp_start"]
+            temp_end = self.outages_storage.read()["temp_end"]
+        except KeyError:
+            temp_start = get_unix()
+            temp_end = get_unix()
+            self.outages_storage.temp("start", temp_start)
+            self.outages_storage.temp("end", temp_end)
+            logger.warn(
+                "Temporary values not found inside outages.json. Using get_unix instead"
+            )
+        finally:
+            self.last_power_on: int = temp_start
+            self.last_power_off: int = temp_end
+            self.last_power_on_local: int = temp_start
+            self.last_power_off_local: int = temp_end
 
         self.state_v: bool = bool
         self._init_loop()
@@ -80,7 +91,7 @@ class Application(TeleBot):
         self.image_scraper = TGEBImageScraper("https://poweron.loe.lviv.ua/")
 
         self._init_schedule()
-
+        logger.info("All services have been initalized successfully")
         ### User commands
 
         @self.message_handler(commands=["start"])

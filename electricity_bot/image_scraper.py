@@ -5,7 +5,7 @@ from time import sleep  # type: ignore
 
 import logging
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("general")
 
 
 class TGEBImageScraper:

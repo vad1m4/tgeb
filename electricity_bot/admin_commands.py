@@ -8,19 +8,22 @@ from electricity_bot.vars import (
     group_choice,
     stats_group_str,
     outages_group_str,
+    all_str,
+    cancel_str,
+    no_str,
+    yes_str,
 )
 from electricity_bot.time import get_date, get_time
 from electricity_bot.logger import log_cmd
 
 import logging
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("general")
+user_logger = logging.getLogger("user_actions")
 
 
 def not_admin(message: types.Message, bot: TeleBot) -> None:
-    logger.info(
-        f'{message.from_user.first_name} {message.from_user.last_name} [{message.from_user.id}] has used the following command: "not_admin"'
-    )
+    log_cmd(message, "not_admin")
     bot.send_message(
         message.from_user.id,
         f" \n\n❌ Ви не є адміном цього бота.",
@@ -29,9 +32,7 @@ def not_admin(message: types.Message, bot: TeleBot) -> None:
 
 
 def menu(message: types.Message, bot: TeleBot) -> None:
-    logger.info(
-        f'{message.from_user.first_name} {message.from_user.last_name} [{message.from_user.id}] has used the following command: "admin_menu"'
-    )
+    log_cmd(message, "admin menu")
     bot.send_message(
         message.from_user.id,
         f"💻 Оберіть одну з опцій.",
@@ -41,9 +42,7 @@ def menu(message: types.Message, bot: TeleBot) -> None:
 
 
 def _blacklist_(message: types.Message, bot: TeleBot) -> None:
-    logger.info(
-        f'{message.from_user.first_name} {message.from_user.last_name} [{message.from_user.id}] has used the following command: "blacklist 1"'
-    )
+    log_cmd(message, "blacklist 1")
     bot.send_message(
         message.from_user.id,
         f"🤖 Введіть номер або User ID користувача, якого ви хочете заблокувати.",
@@ -80,7 +79,7 @@ def _blacklist(message: types.Message, bot: TeleBot) -> None:
 def blacklist(message: types.Message, bot: TeleBot, number: int | str) -> None:
     log_cmd(message, "blacklist 3")
     bot.user_storage.blacklist(number, message.text)
-    logger.info(
+    user_logger.info(
         f"Admin {message.from_user.first_name} {message.from_user.last_name} [{message.from_user.id}] blocked {number}, reason: {message.text}"
     )
     logger.info(
@@ -115,6 +114,12 @@ def unblacklist(message: types.Message, bot: TeleBot) -> None:
             parse_mode="html",
             reply_markup=admin_markup,
         )
+        user_logger.info(
+            f"Admin {message.from_user.first_name} {message.from_user.last_name} [{message.from_user.id}] unblocked {number}"
+        )
+        logger.info(
+            f"Admin {message.from_user.first_name} {message.from_user.last_name} [{message.from_user.id}] unblocked {number}"
+        )
     else:
         bot.send_message(
             message.from_user.id,
@@ -125,6 +130,7 @@ def unblacklist(message: types.Message, bot: TeleBot) -> None:
 
 
 def current_date(message: types.Message, bot: TeleBot) -> None:
+    log_cmd(message, "current_date")
     bot.send_message(
         message.from_user.id,
         f"📅 Сьогоднішня дата: {get_date()} {get_time()}",
@@ -137,7 +143,7 @@ def add_schedule(
     message: types.Message,
     bot: TeleBot,
 ) -> None:
-    log_cmd(message, "add_schedule")
+    log_cmd(message, "add_schedule 1")
     markup = schedules_markup(bot)
     bot.send_message(
         message.from_user.id,
@@ -152,7 +158,8 @@ def _add_schedule(
     message: types.Message,
     bot: TeleBot,
 ) -> None:
-    if message.text == "Назад":
+    log_cmd(message, "add_schedule 2")
+    if message.text == cancel_str:
         menu(message, bot)
     else:
         if bot.id_storage.exists(message.text):
@@ -176,9 +183,10 @@ def _add_schedule(
 
 
 def do_update_schedule(message: types.Message, bot: TeleBot, date: None) -> None:
-    if message.text == "Назад" or message.text == "Ні":
+    log_cmd(message, "do_update_schedule")
+    if message.text == cancel_str or message.text == no_str:
         menu(message, bot)
-    elif message.text == "Так":
+    elif message.text == yes_str:
         bot.send_message(
             message.from_user.id,
             f"🛠 Надішліть фотографію графіку.",
@@ -189,7 +197,7 @@ def do_update_schedule(message: types.Message, bot: TeleBot, date: None) -> None
     else:
         bot.send_message(
             message.from_user.id,
-            f'🤖 Не розумію. Оберіть відповідь "Так", "Ні" або "Назад".',
+            f'🤖 Не розумію. Оберіть відповідь "{yes_str}", "{no_str}" або "{cancel_str}".',
             parse_mode="html",
             reply_markup=generic_choice,
         )
@@ -216,7 +224,7 @@ def handle_photos(
         )
         menu(message, bot)
     else:
-        if message.text == "Назад":
+        if message.text == cancel_str:
             menu(message, bot)
         else:
             bot.send_message(
@@ -241,13 +249,16 @@ def _announce_(message: types.Message, bot: TeleBot) -> None:
 
 def _announce(message: types.Message, bot: TeleBot):
     log_cmd(message, "announce 2")
-    if message.text == "Назад":
+    if message.text == cancel_str:
         menu(message, bot)
-    elif message.text == outages_group_str or message.text == stats_group_str:
-        if message.text == outages_group_str:
-            group = "outages"
-        else:
-            group = "stats"
+    elif message.text in [outages_group_str, stats_group_str, all_str]:
+        match message.text:
+            case str(outages_group_str):
+                group = "outages"
+            case str(stats_group_str):
+                group = "stats"
+            case str(all_str):
+                group = "users"
         bot.send_message(
             message.from_user.id,
             f"⌨️ Тепер напишіть ваше оголошення.",
@@ -258,7 +269,7 @@ def _announce(message: types.Message, bot: TeleBot):
     else:
         bot.send_message(
             message.from_user.id,
-            f'🤖 Не розумію. Оберіть відповідь "{outages_group_str}", "{stats_group_str}" або "Назад".',
+            f'🤖 Не розумію. Оберіть відповідь "{outages_group_str}", "{stats_group_str}" або "{cancel_str}".',
             parse_mode="html",
             reply_markup=generic_choice,
         )
@@ -267,7 +278,7 @@ def _announce(message: types.Message, bot: TeleBot):
 
 def announce(message: types.Message, bot: TeleBot, group: str):
     log_cmd(message, "announce 3")
-    if message.text == "Назад":
+    if message.text == cancel_str:
         menu(message, bot)
     else:
         logger.info(
@@ -276,7 +287,11 @@ def announce(message: types.Message, bot: TeleBot, group: str):
         logger.info(
             f'Admin {message.from_user.first_name} {message.from_user.last_name} [{message.from_user.id}] announced to "{group}", text: {message.text}'
         )
-        for user_id in bot.user_storage.read()[group]:
+        if group == "users":
+            group_list = list(bot.user_storage.read()[group].keys())
+        else:
+            group_list = bot.user_storage.read()[group]
+        for user_id in group_list:
             try:
                 bot.send_message(
                     user_id,

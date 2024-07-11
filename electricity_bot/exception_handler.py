@@ -2,7 +2,7 @@ from telebot import ExceptionHandler  # type: ignore
 
 import logging
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("general")
 
 
 class TGEBExceptionHandler(ExceptionHandler):
