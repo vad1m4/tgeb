@@ -157,7 +157,7 @@ class Application(TeleBot):
         @self.message_handler(commands=["seeschedule"])
         def see_schedule(message: Message) -> None:
             if self.user_storage.is_authorized(message.from_user.id):
-                commands.see_schedule(message, self)
+                commands._see_schedule(message, self)
             else:
                 commands.not_authorized(message, self)
 
@@ -273,7 +273,7 @@ class Application(TeleBot):
         schedule.every().day.at("10:00", "Europe/Kiev").do(funcs.scrape_job, self, 0)
         schedule.every().day.at("12:00", "Europe/Kiev").do(funcs.scrape_job, self, 0)
         schedule.every().day.at("15:00", "Europe/Kiev").do(funcs.scrape_job, self, 0)
-        schedule.every().day.at("22:00", "Europe/Kiev").do(funcs.scrape_job, self, 1)
+        schedule.every().day.at("21:00", "Europe/Kiev").do(funcs.scrape_job, self, 1)
 
         run_event = threading.Event()
         run_event.set()

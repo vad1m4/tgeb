@@ -42,13 +42,17 @@ def notifications_markup(bot: TeleBot, user_id: int) -> types.ReplyKeyboardMarku
     return markup.add(generic, stats, cancel_b)
 
 
-def schedules_markup(bot: TeleBot) -> types.ReplyKeyboardMarkup:
+generic_str = "Загальний"
+
+
+def schedules_markup(_tomorrow: bool = False) -> types.ReplyKeyboardMarkup:
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=3)
     today = types.KeyboardButton(str(get_date()))
-    tomorrow = types.KeyboardButton(str(get_date(1)))
-    generic = types.KeyboardButton("generic")
-
-    return markup.add(today, tomorrow, generic)
+    generic = types.KeyboardButton(generic_str)
+    if _tomorrow:
+        tomorrow = types.KeyboardButton(str(get_date(1)))
+        return markup.add(today, tomorrow, generic)
+    return markup.add(today, generic)
 
 
 none: types.ReplyKeyboardRemove = types.ReplyKeyboardRemove()

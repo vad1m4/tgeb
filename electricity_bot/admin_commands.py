@@ -12,6 +12,7 @@ from electricity_bot.vars import (
     cancel_str,
     no_str,
     yes_str,
+    generic_str,
 )
 from electricity_bot.time import get_date, get_time
 from electricity_bot.logger import log_cmd
@@ -144,7 +145,7 @@ def add_schedule(
     bot: TeleBot,
 ) -> None:
     log_cmd(message, "add_schedule 1")
-    markup = schedules_markup(bot)
+    markup = schedules_markup(True)
     bot.send_message(
         message.from_user.id,
         f"Оберіть дату.",
@@ -159,19 +160,21 @@ def _add_schedule(
     bot: TeleBot,
 ) -> None:
     log_cmd(message, "add_schedule 2")
-    if message.text == cancel_str:
+    schedule = message.text
+    if schedule == cancel_str:
         menu(message, bot)
     else:
-        if bot.id_storage.exists(message.text):
+        if schedule == generic_str:
+            schedule = "generic"
+
+        if bot.id_storage.exists(schedule):
             bot.send_message(
                 message.from_user.id,
                 f"🤖 Цей графік вже було додано. Оновити його?",
                 parse_mode="html",
                 reply_markup=generic_choice,
             )
-            bot.register_next_step_handler(
-                message, do_update_schedule, bot, message.text
-            )
+            bot.register_next_step_handler(message, do_update_schedule, bot, schedule)
         else:
             bot.send_message(
                 message.from_user.id,
@@ -179,7 +182,7 @@ def _add_schedule(
                 parse_mode="html",
                 reply_markup=cancel,
             )
-            bot.register_next_step_handler(message, handle_photos, bot, message.text)
+            bot.register_next_step_handler(message, handle_photos, bot, schedule)
 
 
 def do_update_schedule(message: types.Message, bot: TeleBot, date: None) -> None:

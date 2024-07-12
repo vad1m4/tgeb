@@ -5,6 +5,8 @@ from electricity_bot.vars import (
     notifications_markup,
     login_markup,
     cancel_str,
+    schedules_markup,
+    generic_str,
 )
 from electricity_bot.funcs import generic
 from electricity_bot.time import get_date, get_time
@@ -222,32 +224,42 @@ def state(message: types.Message, bot: TeleBot) -> None:
         )
 
 
+def _see_schedule(message: types.Message, bot: TeleBot) -> None:
+    log_cmd(message, "see_schedule 1")
+    markup = schedules_markup(bot.id_storage.exists(get_date(1)))
+    bot.send_message(
+        message.from_user.id,
+        f"Оберіть дату.",
+        parse_mode="html",
+        reply_markup=markup,
+    )
+    bot.register_next_step_handler(message, see_schedule, bot)
+
+
 def see_schedule(message: types.Message, bot: TeleBot) -> None:
     generic_markup = _generic_markup(bot, message.from_user.id)
-    log_cmd(message, "see_schedule")
-    if bot.id_storage.exists():
-        bot.send_photo(
-            message.chat.id,
-            bot.id_storage.get_schedule(get_date()),
-            parse_mode="html",
-            reply_markup=generic_markup,
-            caption=f"💡 Графік відключень світла на {get_date()}.\n\n<i>Неправильний графік? Ви можете залишити відгук</i>",
-        )
-    elif bot.id_storage.exists("generic"):
-        bot.send_photo(
-            message.chat.id,
-            bot.id_storage.get_schedule("generic"),
-            parse_mode="html",
-            reply_markup=generic_markup,
-            caption=f"💡 Графік відключень світла на {get_date()}.\n\n<i>Неправильний графік? Ви можете залишити відгук</i>",
-        )
+    log_cmd(message, "see_schedule 2")
+    schedule = message.text
+    if schedule == cancel_str:
+        generic(message, bot)
     else:
-        bot.send_message(
-            message.chat.id,
-            f"❌ На жаль, графіку відключень світла немає. Якщо проблема продовжиться, залиште відгук.",
-            parse_mode="html",
-            reply_markup=generic_markup,
-        )
+        if schedule == generic_str:
+            schedule = "generic"
+        if bot.id_storage.exists(schedule):
+            bot.send_photo(
+                message.chat.id,
+                bot.id_storage.get_schedule(schedule),
+                parse_mode="html",
+                reply_markup=generic_markup,
+                caption=f"💡 Графік відключень світла на {get_date()}.\n\n<i>Неправильний графік? Ви можете залишити відгук</i>",
+            )
+        else:
+            bot.send_message(
+                message.chat.id,
+                f"❌ На жаль, графіку відключень світла немає. Якщо проблема продовжиться, залиште відгук.",
+                parse_mode="html",
+                reply_markup=generic_markup,
+            )
 
 
 def _feedback(message: types.Message, bot: TeleBot) -> None:
@@ -275,6 +287,3 @@ def feedback(message: types.Message, bot: TeleBot) -> None:
             f'❕ {message.from_user.first_name} {message.from_user.last_name} [{message.from_user.id}] залишили відгук!\n\n"{message.text}"',
             parse_mode="html",
         )
-
-
-""
