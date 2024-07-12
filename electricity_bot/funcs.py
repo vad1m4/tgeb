@@ -32,10 +32,10 @@ def notify(bot: TeleBot, group: str, message: str):
                 logger.error(
                     f"{user_id} has blocked the bot. Removing them from the list"
                 )
-                bot.user_storage.delete(user_id, "outages")
+                bot.user_storage.delete(user_id, group)
             elif e.error_code in [401, 404]:
                 logger.error(f"Could not access {user_id}. Removing them from the list")
-                bot.user_storage.delete(user_id, "outages")
+                bot.user_storage.delete(user_id, group)
             continue
         except Exception as e:
             logger.error(
