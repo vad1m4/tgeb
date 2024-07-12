@@ -17,6 +17,34 @@ logger = logging.getLogger("general")
 outage_logger = logging.getLogger("outage")
 
 
+def notify(bot: TeleBot, group: str, message: str):
+    for user_id in bot.user_storage.read()[group]:
+        try:
+            bot.send_message(
+                user_id,
+                message,
+                parse_mode="html",
+            )
+            logger.info(f"Notified: {user_id}")
+            continue
+        except apihelper.ApiTelegramException as e:
+            if e.error_code == 403:
+                logger.error(
+                    f"{user_id} has blocked the bot. Removing them from the list"
+                )
+                bot.user_storage.delete(user_id, "outages")
+            elif e.error_code in [401, 404]:
+                logger.error(f"Could not access {user_id}. Removing them from the list")
+                bot.user_storage.delete(user_id, "outages")
+            continue
+        except Exception as e:
+            logger.error(
+                f"{e} occured. Take actions regarding this error as soon as possible."
+            )
+            continue
+    logger.info(f"Users notified.")
+
+
 def termux_loop(bot: TeleBot, run_event: Event) -> None:
     if bot.debug_termux:
         import random
@@ -61,32 +89,11 @@ def termux_loop(bot: TeleBot, run_event: Event) -> None:
                 bot.last_power_off_local = unix
                 logger.info(f"Electricity is out. Notifying users.")
                 outage_logger.info(f"Electricity is out.")
-                for user_id in bot.user_storage.read()["outages"]:
-                    try:
-                        logger.info(f"Notified: {user_id}")
-                        bot.send_message(
-                            user_id,
-                            f"❌ {current_time} - {ADDRESS}, світло вимкнули. Світло було {formatter.format(bot.last_power_off-bot.last_power_on)}",
-                            parse_mode="html",
-                        )
-                    except apihelper.ApiTelegramException as e:
-                        if e.error_code == 403:
-                            logger.error(
-                                f"{user_id} has blocked the bot. Removing them from the list"
-                            )
-                            bot.user_storage.delete(user_id, "outages")
-                        elif e.error_code in [401, 404]:
-                            logger.error(
-                                f"Could not access {user_id}. Removing them from the list"
-                            )
-                            bot.user_storage.delete(user_id, "outages")
-                        continue
-                    except Exception as e:
-                        logger.error(
-                            f"{e} occured. Take actions regarding this error as soon as possible."
-                        )
-                        continue
-                logger.info(f"Users notified.")
+                notify(
+                    bot,
+                    "outages",
+                    f"❌ {current_time} - {ADDRESS}, світло вимкнули. Світло було {formatter.format(bot.last_power_off-bot.last_power_on)}",
+                )
             else:
                 continue
         else:
@@ -98,32 +105,11 @@ def termux_loop(bot: TeleBot, run_event: Event) -> None:
                 bot.outages_storage.save(bot.last_power_off_local, bot.last_power_on)
                 logger.info(f"Electricity is back on. Notifying users.")
                 outage_logger.info(f"otg Electricity is back on.")
-                for user_id in bot.user_storage.read()["outages"]:
-                    try:
-                        logger.info(f"Notified: {user_id}")
-                        bot.send_message(
-                            user_id,
-                            f"✅ {current_time} - Івасюка 50А, світло увімкнули. Світла не було {formatter.format(bot.last_power_on-bot.last_power_off)}",
-                            parse_mode="html",
-                        )
-                    except apihelper.ApiTelegramException as e:
-                        if e.error_code == 403:
-                            logger.error(
-                                f"{user_id} has blocked the bot. Removing them from the list"
-                            )
-                            bot.user_storage.delete(user_id, "outages")
-                        elif e.error_code in [401, 404]:
-                            logger.error(
-                                f"Could not access {user_id}. Removing them from the list"
-                            )
-                            bot.user_storage.delete(user_id, "outages")
-                        continue
-                    except Exception as e:
-                        logger.error(
-                            f"{e} occured. Take actions regarding this error as soon as possible."
-                        )
-                        continue
-                logger.info(f"Users notified.")
+                notify(
+                    bot,
+                    "outages",
+                    f"✅ {current_time} - Івасюка 50А, світло увімкнули. Світла не було {formatter.format(bot.last_power_on-bot.last_power_off)}",
+                )
             else:
                 continue
 
@@ -212,31 +198,7 @@ def stats(bot: TeleBot, date: str = None, message: types.Message = None) -> None
     else:
         message_text: str = f"🥳 За минулу добу не було жодного відключення світла!"
     if message == None:
-        for user_id in bot.user_storage.read()["stats"]:
-            try:
-                logger.info(f"Notified: {user_id}")
-                bot.send_message(
-                    user_id,
-                    message_text,
-                    parse_mode="html",
-                )
-            except apihelper.ApiTelegramException as e:
-                if e.error_code == 403:
-                    logger.error(
-                        f"{user_id} has blocked the bot. Removing them from the list"
-                    )
-                    bot.user_storage.delete(user_id, "stats")
-                elif e.error_code in [401, 404]:
-                    logger.error(
-                        f"Could not access {user_id}. Removing them from the list"
-                    )
-                    bot.user_storage.delete(user_id, "stats")
-                continue
-            except Exception as e:
-                logger.error(
-                    f"{e} occured. Take actions regarding this error as soon as possible."
-                )
-                continue
+        notify(bot, "stats", message_text)
     else:
         logger.info(f"Notified: {message.from_user.id}")
         bot.send_message(
