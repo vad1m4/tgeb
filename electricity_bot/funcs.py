@@ -147,13 +147,12 @@ def stats_job(bot: TeleBot) -> None:
     stats(bot, get_date(-1))
 
 
-def scrape_job(
-    bot: TeleBot, date: str = None, user_id: int = None, is_manual: bool = False
-) -> None:
-    if date == None:
-        date = get_date(1)
+def scrape_job(bot: TeleBot, date_i: int = None, user_id: int = None) -> None:
+    if date_i == None:
+        date_i = 1
+    date = get_date(date_i)
     logger.info(f"Scraping images from {bot.image_scraper.url}.")
-    if is_manual:
+    if user_id != None:
         bot.send_message(
             user_id,
             f"Scraping images from {bot.image_scraper.url}.",
@@ -162,10 +161,10 @@ def scrape_job(
     images = bot.image_scraper.scrape_images()
     if len(images) > 0:
         try:
-            image = bot.image_scraper.scrape_images()[0]
+            image = images[0]
             bot.id_storage.save(image, date)
             logger.info("Schedule image scraped successfully.")
-            if is_manual:
+            if user_id != None:
                 bot.send_message(
                     user_id,
                     "Schedule image scraped successfully.",
@@ -174,7 +173,7 @@ def scrape_job(
             logger.error(
                 f"{e} occured. Take actions regarding this error as soon as possible."
             )
-            if is_manual:
+            if user_id != None:
                 bot.send_message(
                     user_id,
                     f"{e} occured. Take actions regarding this error as soon as possible.",
@@ -182,6 +181,11 @@ def scrape_job(
 
     else:
         logger.error("Could not scrape images.")
+        if user_id != None:
+            bot.send_message(
+                user_id,
+                "Could not scrape images.",
+            )
 
 
 def schedule_loop(run_event: Event) -> None:

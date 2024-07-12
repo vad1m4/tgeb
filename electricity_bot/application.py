@@ -71,7 +71,7 @@ class Application(TeleBot):
         try:
             temp_start = self.outages_storage.read()["temp_start"]
             temp_end = self.outages_storage.read()["temp_end"]
-        except KeyError:
+        except KeyError or UnboundLocalError:
             temp_start = get_unix()
             temp_end = get_unix()
             self.outages_storage.temp("start", temp_start)
@@ -198,7 +198,7 @@ class Application(TeleBot):
         @self.message_handler(commands=["scrape"])
         def scrape(message: Message) -> None:
             if self.is_admin(message.from_user.id):
-                funcs.scrape_job(self, get_date(), message.from_user.id, True)
+                funcs.scrape_job(self, 0, message.from_user.id)
             else:
                 admin_cmd.not_admin(message, self)
 
@@ -269,7 +269,11 @@ class Application(TeleBot):
 
         schedule.every().day.at("00:00", "Europe/Kiev").do(funcs.stats_job, self)
 
-        schedule.every().day.at("22:00", "Europe/Kiev").do(funcs.scrape_job, self)
+        schedule.every().day.at("05:00", "Europe/Kiev").do(funcs.scrape_job, self, 0)
+        schedule.every().day.at("10:00", "Europe/Kiev").do(funcs.scrape_job, self, 0)
+        schedule.every().day.at("12:00", "Europe/Kiev").do(funcs.scrape_job, self, 0)
+        schedule.every().day.at("15:00", "Europe/Kiev").do(funcs.scrape_job, self, 0)
+        schedule.every().day.at("22:00", "Europe/Kiev").do(funcs.scrape_job, self, 1)
 
         run_event = threading.Event()
         run_event.set()
