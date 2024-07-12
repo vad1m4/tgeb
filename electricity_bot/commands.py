@@ -246,12 +246,13 @@ def see_schedule(message: types.Message, bot: TeleBot) -> None:
         if schedule == generic_str:
             schedule = "generic"
         if bot.id_storage.exists(schedule):
+            date = schedule if schedule != "generic" else get_date()
             bot.send_photo(
                 message.chat.id,
                 bot.id_storage.get_schedule(schedule),
                 parse_mode="html",
                 reply_markup=generic_markup,
-                caption=f"💡 Графік відключень світла на {schedule if schedule != "generic" else get_date()}.\n\n<i>Неправильний графік? Ви можете залишити відгук</i>",
+                caption=f"💡 Графік відключень світла на {date}.\n\n<i>Неправильний графік? Ви можете залишити відгук</i>",
             )
         else:
             bot.send_message(
