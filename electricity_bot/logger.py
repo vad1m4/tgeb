@@ -1,8 +1,6 @@
 import logging.config
 import logging.handlers
-import atexit
 from pathlib import Path
-from typing import Any, override
 from telebot.types import Message  # type: ignore
 import os
 
