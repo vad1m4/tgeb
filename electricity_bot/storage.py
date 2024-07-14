@@ -1,8 +1,8 @@
 from pathlib import Path
 import json
 from abc import ABC, abstractmethod
-from typing import Iterable
-from electricity_bot.time import get_time, get_date, get_unix, unix_to_date
+from electricity_bot.time import get_date, get_unix, unix_to_date
+from typing import Any
 
 
 class JSONStorage(ABC):
@@ -16,7 +16,7 @@ class JSONStorage(ABC):
     def write(self, records) -> None: ...
 
     @abstractmethod
-    def delete(self, indexes_to_delete: Iterable[int]) -> None: ...
+    def delete(self, index: int) -> None: ...
 
 
 class JSONFileUserStorage(JSONStorage):
@@ -47,8 +47,12 @@ class JSONFileUserStorage(JSONStorage):
 
     def delete(self, user_id: int, _type: str) -> None:
         users = self.read()
-        if self.subscribed(user_id, _type):
-            users[_type].remove(user_id)
+        if _type == "users":
+            if self.is_authorized(user_id):
+                users[_type].pop(user_id)
+        else:
+            if self.subscribed(user_id, _type):
+                users[_type].remove(user_id)
         self.write(users)
 
     def subscribed(self, user_id: int, _type: str) -> bool:
@@ -77,7 +81,9 @@ class JSONFileUserStorage(JSONStorage):
         users = self.read()
         users["users"]["blacklist"][phone_number] = reason
         users["users"] = {
-            key: val for key, val in users["users"].items() if val != phone_number
+            key: val
+            for key, val in users["users"].items()
+            if (val != phone_number and key != phone_number)
         }
         self.write(users)
 
@@ -142,7 +148,9 @@ class JSONFileScheduleStorage(JSONStorage):
         else:
             return False
 
-    def get_schedule(self, date: str = get_date()):
+    def get_schedule(self, date: str = None):
+        if date == None:
+            date = get_date()
         return self.read()[date]
 
 
@@ -166,7 +174,7 @@ class JSONFileOutageStorage(JSONStorage):
         with open(self._jsonfile, "w", encoding="utf-8") as f:
             json.dump(outages, f, indent=4)
 
-    def save(self, power_off: int, power_on: int = None) -> None:
+    def save(self, power_off: int, power_on: int | Any = None) -> None:
         if power_on == None:
             power_on = get_unix()
         date = unix_to_date(power_off)
@@ -181,7 +189,7 @@ class JSONFileOutageStorage(JSONStorage):
         }
         self.write(general_outages)
 
-    def temp(self, _type: str = "start", time: int = None):
+    def temp(self, _type: str = "start", time: int | Any = None):
         if time == None:
             time = get_unix()
         general_outages = self.read()
@@ -194,23 +202,27 @@ class JSONFileOutageStorage(JSONStorage):
         del outages[date][outage]
         self.write(outages)
 
-    def exists(self, outage: int = 1, date: str = None) -> bool:
+    def exists(self, outage: int | str = 1, date: str | Any = None) -> bool:
         if date == None:
             date = get_date()
-        if str(outage) in self.read()[date].keys():
-            return True
+        data = self.read()
+        if date in data.keys():
+            if str(outage) in self.read()[date].keys():
+                return True
+            else:
+                return False
         else:
             return False
 
-    def get_outage(self, outage: int = 1, date: str = None) -> dict[str:int]:
+    def get_outage(
+        self, outage: int | str = 1, date: str | Any = None
+    ) -> dict[str:int] | int:
         if date == None:
             date = get_date()
-        if self.exists(outage):
-            return self.read()[date][outage]
+        return self.read()[date][str(outage)]
 
-    def lasted(self, outage: int = 1, date: str = None) -> int:
+    def lasted(self, outage: int = 1, date: str | Any = None) -> int:
         if date == None:
             date = get_date()
-        if self.exists(outage):
-            data = self.read()
-            return int(data[date][str(outage)]["end"] - data[date][outage]["start"])
+        data = self.read()
+        return int(data[date][str(outage)]["end"] - data[date][outage]["start"])

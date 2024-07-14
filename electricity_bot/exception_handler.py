@@ -1,14 +1,19 @@
-from telebot import ExceptionHandler
+import telebot  # type: ignore
+
 import logging
 
+logger = logging.getLogger("general")
 
-class TGEBExceptionHandler(ExceptionHandler):
-    def __init__(self, logger: logging.Logger) -> None:
-        self.logger = logger
-        self.logger.init("Exception handler", True)
+telebot.apihelper.RETRY_ON_ERROR = True
+telebot.apihelper.RETRY_TIMEOUT = 20
+telebot.apihelper.MAX_RETRIES = 20
 
-    def handle(self, exception: Exception) -> None:
-        self.logger.error(
+
+class TGEBExceptionHandler(telebot.ExceptionHandler):
+    # def __init__(self, logger: logging.Logger) -> None:
+
+    def handle(self, exception: Exception) -> bool:
+        logger.error(
             f"{exception} occured. Take actions regarding this error as soon as possible."
         )
         return True

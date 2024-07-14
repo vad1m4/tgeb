@@ -2,10 +2,11 @@ from electricity_bot.time import seconds_to_time
 
 
 def format_text(time: int, measurement: str) -> str:
-    if (time % 10) == 1:
-        measurement += "у"
-    if (time % 10) > 1 and (time % 10) < 5 and (time > 20 or time < 10):
-        measurement += "и"
+    if time > 20 or time < 10:
+        if (time % 10) == 1:
+            measurement += "у"
+        elif (time % 10) > 1 and (time % 10) < 5:
+            measurement += "и"
     return measurement
 
 

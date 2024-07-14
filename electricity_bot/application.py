@@ -1,5 +1,6 @@
-import telebot
-from telebot.types import Message
+from telebot import TeleBot  # type: ignore
+from telebot.types import Message  # type: ignore
+
 from electricity_bot.storage import (
     JSONFileUserStorage,
     JSONFileScheduleStorage,
@@ -21,107 +22,76 @@ from electricity_bot.vars import (
     blacklist_str,
     unblacklist_str,
     announcement_str,
+    feedback_str,
+    stats_str,
 )
-from electricity_bot.time import get_date, get_time
-from electricity_bot.logger import TGEBLogger
+from electricity_bot.time import get_date, get_unix
+
+# from electricity_bot.logger import add_logger
 from electricity_bot.config import admins
 import electricity_bot.commands as commands
 import electricity_bot.funcs as funcs
 from electricity_bot.image_scraper import TGEBImageScraper
 import electricity_bot.admin_commands as admin_cmd
-from logging import INFO, DEBUG
+
 from pathlib import Path
+
+import logging
 import threading
 import schedule
 
 
-class Application(telebot.TeleBot):
+logger = logging.getLogger("general")
+
+
+class Application(TeleBot):
     def __init__(
         self, token: str, debug: bool = False, debug_termux: bool = False
     ) -> None:
 
-        ### Loggers
-
         self.debug = debug
         self.debug_termux = debug_termux
 
-        if self.debug:
-            self.level = DEBUG
-        else:
-            self.level = INFO
-
-        self.general_logger = TGEBLogger(
-            "General logger",
-            f"general_logs/bot_{get_date()}_{get_time('-')}.txt",
-            True,
-            self.level,
-        )
-
-        self.outage_logger = TGEBLogger(
-            "Outage logger", f"outage_logs/bot_{get_date()}_{get_time('-')}.txt"
-        )
-        self.general_logger.init("Outage logger", True, self.level)
-
-        self.user_action_logger = TGEBLogger(
-            "User action logger",
-            f"user_action_logs/bot_{get_date()}_{get_time('-')}.txt",
-        )
-        self.general_logger.init("User action logger", True, self.level)
-
         ### Telegram bot init
 
-        exception_handler = TGEBExceptionHandler(self.general_logger)
+        exception_handler = TGEBExceptionHandler()
 
-        try:
-            super().__init__(token, exception_handler=exception_handler)
-            self.general_logger.init("Telegram bot", True)
-        except Exception as e:
-            self.general_logger.init("Telegram bot", False, e)
-            exit()
+        super().__init__(token, exception_handler=exception_handler)
+        logger.info("Telegram bot initialized")
 
         ### Storage init
 
-        try:
-            self.user_storage = JSONFileUserStorage(Path.cwd() / "users.json")
-            self.general_logger.init("User storage", True)
-        except Exception as e:
-            self.general_logger.init("User storage", False, e)
-            exit()
-        try:
-            self.id_storage = JSONFileScheduleStorage(Path.cwd() / "schedules.json")
-            self.general_logger.init("Schedule storage", True)
-        except Exception as e:
-            self.general_logger.init("Schedule storage", False, e)
-            exit()
-        try:
-            self.outages_storage = JSONFileOutageStorage(Path.cwd() / "outages.json")
-            self.general_logger.init("Outages storage", True)
-        except Exception as e:
-            self.general_logger.init("Outages storage", False, e)
-            exit()
+        self.user_storage = JSONFileUserStorage(Path.cwd() / "users.json")
+        self.id_storage = JSONFileScheduleStorage(Path.cwd() / "schedules.json")
+        self.outages_storage = JSONFileOutageStorage(Path.cwd() / "outages.json")
+        logger.info("Storage initialized")
 
         ### Electricity checker loop init
 
-        self.last_power_on = self.outages_storage.read()["temp_start"]
-        self.last_power_off = self.outages_storage.read()["temp_end"]
+        try:
+            temp_start = self.outages_storage.read()["temp_start"]
+            temp_end = self.outages_storage.read()["temp_end"]
+        except KeyError or UnboundLocalError:
+            temp_start = get_unix()
+            temp_end = get_unix()
+            self.outages_storage.temp("start", temp_start)
+            self.outages_storage.temp("end", temp_end)
+            logger.warn(
+                "Temporary values not found inside outages.json. Using get_unix instead"
+            )
+        finally:
+            self.last_power_on: int = temp_start
+            self.last_power_off: int = temp_end
+            self.last_power_on_local: int = temp_start
+            self.last_power_off_local: int = temp_end
 
-        self.last_power_on_local = self.outages_storage.read()["temp_start"]
-        self.last_power_off_local = self.outages_storage.read()["temp_end"]
-
-        self.state_v = bool
+        self.state_v: bool = bool
         self._init_loop()
 
-        try:
-            self.image_scraper = TGEBImageScraper(
-                self.general_logger, "https://poweron.loe.lviv.ua/"
-            )
-            self.general_logger.init("Image scraper", True)
-        except Exception as e:
-            self.general_logger.init("Image scraper", False, e)
-            exit()
+        self.image_scraper = TGEBImageScraper("https://poweron.loe.lviv.ua/")
 
         self._init_schedule()
-
+        logger.info("All services have been initalized successfully")
         ### User commands
 
         @self.message_handler(commands=["start"])
@@ -187,7 +157,15 @@ class Application(telebot.TeleBot):
         @self.message_handler(commands=["seeschedule"])
         def see_schedule(message: Message) -> None:
             if self.user_storage.is_authorized(message.from_user.id):
-                commands.see_schedule(message, self)
+                commands._see_schedule(message, self)
+            else:
+                commands.not_authorized(message, self)
+
+        @self.message_handler(regexp=feedback_str)
+        @self.message_handler(commands=["feedback"])
+        def handle_other(message: Message) -> None:
+            if self.user_storage.is_authorized(message.from_user.id):
+                commands._feedback(message, self)
             else:
                 commands.not_authorized(message, self)
 
@@ -220,7 +198,7 @@ class Application(telebot.TeleBot):
         @self.message_handler(commands=["scrape"])
         def scrape(message: Message) -> None:
             if self.is_admin(message.from_user.id):
-                funcs.scrape_job(self, get_date(), message.from_user.id, True)
+                funcs.scrape_job(self, 0, message.from_user.id)
             else:
                 admin_cmd.not_admin(message, self)
 
@@ -256,6 +234,14 @@ class Application(telebot.TeleBot):
             else:
                 admin_cmd.not_admin(message, self)
 
+        @self.message_handler(regexp=stats_str)
+        @self.message_handler(commands=["stats"])
+        def stats(message: Message):
+            if self.is_admin(message.from_user.id):
+                funcs.stats(self, get_date(-1), message)
+            else:
+                admin_cmd.not_admin(message, self)
+
         ### Handle other
 
         @self.message_handler(func=lambda message: True)
@@ -268,41 +254,34 @@ class Application(telebot.TeleBot):
     ### Electricity checker loop init
 
     def _init_loop(self):
-        try:
-            run_event = threading.Event()
-            run_event.set()
-            t = threading.Thread(
-                target=funcs.termux_loop,
-                args=(
-                    self,
-                    run_event,
-                ),
-            )
-            t.start()
-        except Exception as e:
-            self.general_logger.init("Electricity checker loop", False)
-            exit()
+        run_event = threading.Event()
+        run_event.set()
+        t = threading.Thread(
+            target=funcs.termux_loop,
+            args=(
+                self,
+                run_event,
+            ),
+        )
+        t.start()
 
     def _init_schedule(self):
 
         schedule.every().day.at("00:00", "Europe/Kiev").do(funcs.stats_job, self)
 
-        schedule.every().day.at("22:00", "Europe/Kiev").do(funcs.scrape_job, self)
+        schedule.every().day.at("05:00", "Europe/Kiev").do(funcs.scrape_job, self, 0)
+        schedule.every().day.at("10:00", "Europe/Kiev").do(funcs.scrape_job, self, 0)
+        schedule.every().day.at("12:00", "Europe/Kiev").do(funcs.scrape_job, self, 0)
+        schedule.every().day.at("15:00", "Europe/Kiev").do(funcs.scrape_job, self, 0)
+        schedule.every().day.at("21:00", "Europe/Kiev").do(funcs.scrape_job, self, 1)
 
-        try:
-            run_event = threading.Event()
-            run_event.set()
-            t = threading.Thread(
-                target=funcs.schedule_loop,
-                args=(
-                    self,
-                    run_event,
-                ),
-            )
-            t.start()
-        except Exception as e:
-            self.general_logger.init("Schedule loop", False)
-            exit()
+        run_event = threading.Event()
+        run_event.set()
+        t = threading.Thread(
+            target=funcs.schedule_loop,
+            args=(run_event,),
+        )
+        t.start()
 
     ### Check if user_id is in self.admins
 
