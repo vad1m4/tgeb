@@ -108,7 +108,7 @@ def termux_loop(bot: TeleBot, run_event: Event) -> None:
                 notify(
                     bot,
                     "outages",
-                    f"✅ {current_time} - Івасюка 50А, світло увімкнули. Світла не було {formatter.format(bot.last_power_on-bot.last_power_off)}",
+                    f"✅ {current_time} - {ADDRESS}, світло увімкнули. Світла не було {formatter.format(bot.last_power_on-bot.last_power_off)}",
                 )
             else:
                 continue
