@@ -37,7 +37,3 @@ def seconds_to_time(seconds: int) -> str:
 
 def get_unix() -> int:
     return int(round(time()))
-
-
-
-print(seconds_to_time(1233))

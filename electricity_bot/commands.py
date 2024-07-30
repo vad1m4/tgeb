@@ -247,13 +247,22 @@ def see_schedule(message: types.Message, bot: TeleBot) -> None:
             schedule = "generic"
         if bot.id_storage.exists(schedule):
             date = schedule if schedule != "generic" else get_date()
-            bot.send_photo(
-                message.chat.id,
-                bot.id_storage.get_schedule(schedule),
-                parse_mode="html",
-                reply_markup=generic_markup,
-                caption=f"💡 Графік відключень світла на {date}.\n\n<i>Неправильний графік? Ви можете залишити відгук</i>",
-            )
+            schedule_id = bot.id_storage.get_schedule(schedule)
+            if schedule_id != None:
+                bot.send_photo(
+                    message.chat.id,
+                    schedule_id,
+                    parse_mode="html",
+                    reply_markup=generic_markup,
+                    caption=f"💡 Графік відключень світла на {date}.\n\n<i>Неправильний графік? Ви можете залишити відгук</i>",
+                )
+            else:
+                bot.send_message(
+                    message.chat.id,
+                    f"🥳 За розпорядженням НЕК Укренерго на {date} <b>погодинні відключення не застосовуватимуться</b>.",
+                    parse_mode="html",
+                    reply_markup=generic_markup,
+                )
         else:
             bot.send_message(
                 message.chat.id,
