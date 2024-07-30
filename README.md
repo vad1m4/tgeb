@@ -1,6 +1,3 @@
-# README IS OUTDATED
-
-
 # TGEB
 
 TGEB is a Telegram bot written in Python to serve the purpose of notifying subscribers of when there is an electricity outage in their home. It utilizes Termux:API to check for whether it's plugged in or not and notifies subscribers based off that information.
