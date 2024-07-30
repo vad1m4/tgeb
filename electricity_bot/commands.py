@@ -292,8 +292,9 @@ def feedback(message: types.Message, bot: TeleBot) -> None:
             parse_mode="html",
         )
         generic(message, bot)
-        bot.send_message(
-            admins_list[0],
-            f'❕ {message.from_user.first_name} {message.from_user.last_name} [{message.from_user.id}] залишили відгук!\n\n"{message.text}"',
-            parse_mode="html",
-        )
+        for admin in admins_list:
+            bot.send_message(
+                admin,
+                f'❕ {message.from_user.first_name} {message.from_user.last_name} [{message.from_user.id}] залишили відгук!\n\n"{message.text}"',
+                parse_mode="html",
+            )
