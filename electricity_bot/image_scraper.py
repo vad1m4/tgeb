@@ -5,7 +5,7 @@ from time import sleep  # type: ignore
 
 import logging
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("general")
 
 
 class TGEBImageScraper:
@@ -41,4 +41,6 @@ class TGEBImageScraper:
                         if src:
                             image_urls.append(src)
         logger.info(f"Found {len(image_urls)} image URLs")
+        for url in image_urls:
+            logger.info(url)
         return image_urls

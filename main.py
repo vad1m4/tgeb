@@ -5,8 +5,6 @@ from electricity_bot.time import get_date, get_time
 from logging import INFO, DEBUG
 import argparse
 
-### Command line args
-
 
 def main() -> None:
     parser = argparse.ArgumentParser("TGEB")

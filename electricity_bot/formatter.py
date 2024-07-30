@@ -2,18 +2,20 @@ from electricity_bot.time import seconds_to_time
 
 
 def format_time(time: int, measurement: str) -> str:
-    if (time % 10) == 1 and time != 11:
-        measurement += "у"
-    if (time % 10) > 1 and (time % 10) < 5 and (time > 20 or time < 10):
-        measurement += "и"
+    if time > 20 or time < 10:
+        if (time % 10) == 1:
+            measurement += "у"
+        elif (time % 10) > 1 and (time % 10) < 5:
+            measurement += "и"
     return measurement
 
 
 def format_days(days: int) -> str:
-    if (days % 10) > 1 and (days % 10) < 5 and (days > 20 or days < 10):
-        return "дні"
-    if (days % 10) == 1 and days != 11:
-        return "день"
+    if days > 20 or days < 10:
+        if (days % 10) == 1:
+            return "день"
+        if (days % 10) > 1 and (days % 10) < 5:
+            return "дні"
 
     return "днів"
 
