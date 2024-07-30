@@ -32,6 +32,8 @@ class TGEBImageScraper:
                 p_tags = aos_div.find_all("p")
 
                 for p in p_tags:
+                    if "не застосовуватимуться" in p.get_text():
+                        return [None]
                     img_tags = p.find_all("img")
 
                     for img in img_tags:

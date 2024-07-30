@@ -166,11 +166,11 @@ def scrape_job(bot: TeleBot, date_i: int = None, user_id: int = None) -> None:
                 )
 
     else:
-        logger.error("Could not scrape images.")
+        logger.error("Found no images to scrape")
         if user_id != None:
             bot.send_message(
                 user_id,
-                "Could not scrape images.",
+                "Found no images to scrape",
             )
 
 
