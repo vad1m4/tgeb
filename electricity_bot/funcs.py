@@ -178,7 +178,7 @@ def scrape_job(
                 )
 
     else:
-        logger.error("Could not scrape images.")
+        logger.error("Found no images to scrape")
 
 
 def schedule_loop(run_event: Event) -> None:

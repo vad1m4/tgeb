@@ -25,8 +25,19 @@ def unix_to_time(date_unix: int) -> str:
 
 
 def seconds_to_time(seconds: int) -> str:
-    return str(datetime.timedelta(seconds=seconds))
+    # timedelta = str(datetime.timedelta(seconds=seconds))
+
+    days, remainder = divmod(seconds, 86400)
+
+    hours, remainder = divmod(remainder, 3600)
+
+    minutes, seconds = divmod(remainder, 60)
+    return f"{days}:{hours}:{minutes}:{seconds}"
 
 
 def get_unix() -> int:
     return int(round(time()))
+
+
+
+print(seconds_to_time(1233))
