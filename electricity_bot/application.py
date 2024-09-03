@@ -325,6 +325,9 @@ class Application(TeleBot):
         schedule.every().day.at("15:00", "Europe/Kiev").do(funcs.scrape_job, self, 0)
         schedule.every().day.at("16:00", "Europe/Kiev").do(funcs.scrape_job, self, 0)
         schedule.every().day.at("17:00", "Europe/Kiev").do(funcs.scrape_job, self, 0)
+        schedule.every().day.at("18:00", "Europe/Kiev").do(funcs.scrape_job, self, 0)
+        schedule.every().day.at("19:00", "Europe/Kiev").do(funcs.scrape_job, self, 0)
+        schedule.every().day.at("19:00", "Europe/Kiev").do(funcs.scrape_job, self, 1)
         schedule.every().day.at("21:00", "Europe/Kiev").do(funcs.scrape_job, self, 1)
 
         run_event = threading.Event()

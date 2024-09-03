@@ -151,7 +151,10 @@ def scrape_job(bot: TeleBot, date_i: int = None, user_id: int = None) -> None:
     images = bot.image_scraper.scrape_images()
     if len(images) > 0:
         try:
-            image = images[0]
+            if date_i > 0:
+                image = images[1]
+            else:
+                image = images[0]
             bot.id_storage.save(image, date)
             logger.info("Schedule image scraped successfully.")
             if user_id != None:
