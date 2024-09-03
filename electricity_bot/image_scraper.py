@@ -29,20 +29,20 @@ class TGEBImageScraper:
             if "http" in img["src"]:
                 image_urls.append(img["src"])
 
-        # divs = soup.find_all("div", class_="power-off__top")
+        divs = soup.find_all("div", class_="power-off__top")
 
-        # for div in divs:
-        #     aos_divs = div.find_all("div", class_="aos-init aos-animate")
-        #     for aos_div in aos_divs:
-        #         p_tags = aos_div.find_all("p")
+        for div in divs:
+            aos_divs = div.find_all("div", class_="aos-init aos-animate")
+            for aos_div in aos_divs:
+                p_tags = aos_div.find_all("p")
 
-        #         for p in p_tags:
-        #             img_tags = p.find_all("img")
-
-        #             for img in img_tags:
-        #                 src = img.get("src")
-        #                 if src:
-        #                     image_urls.append(src)
+                for p in p_tags:
+                    if (
+                        "не застосовуватимуться" in p.get_text()
+                        or "не застосовуються" in p.get_text()
+                    ):
+                        logger.info("No outages for today!")
+                        return [None]
         logger.info(f"Found {len(image_urls)} image URLs")
         # print(f"Found {len(image_urls)} image URLs")
         for url in image_urls:
