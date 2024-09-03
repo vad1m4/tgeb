@@ -23,22 +23,34 @@ class TGEBImageScraper:
         page_source = self.driver.page_source
         self.driver.quit()
         soup = BeautifulSoup(page_source, "html.parser")
-        divs = soup.find_all("div", class_="power-off__top")
-
         image_urls = []
-        for div in divs:
-            aos_divs = div.find_all("div", class_="aos-init aos-animate")
-            for aos_div in aos_divs:
-                p_tags = aos_div.find_all("p")
+        imgs = soup.findAll("img")
+        for img in imgs:
+            if "http" in img["src"]:
+                image_urls.append(img["src"])
 
-                for p in p_tags:
-                    img_tags = p.find_all("img")
+        # divs = soup.find_all("div", class_="power-off__top")
 
-                    for img in img_tags:
-                        src = img.get("src")
-                        if src:
-                            image_urls.append(src)
+        # for div in divs:
+        #     aos_divs = div.find_all("div", class_="aos-init aos-animate")
+        #     for aos_div in aos_divs:
+        #         p_tags = aos_div.find_all("p")
+
+        #         for p in p_tags:
+        #             img_tags = p.find_all("img")
+
+        #             for img in img_tags:
+        #                 src = img.get("src")
+        #                 if src:
+        #                     image_urls.append(src)
         logger.info(f"Found {len(image_urls)} image URLs")
+        # print(f"Found {len(image_urls)} image URLs")
         for url in image_urls:
             logger.info(url)
+            # print(url)
         return image_urls
+
+
+if __name__ == "__main__":
+    image_scraper = TGEBImageScraper("https://poweron.loe.lviv.ua/")
+    urls = image_scraper.scrape_images()
