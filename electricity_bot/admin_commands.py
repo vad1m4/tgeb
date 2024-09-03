@@ -351,13 +351,13 @@ def send_logs(message: types.Message, bot: TeleBot, filenames: list):
                 filename = Path.cwd() / f"general_logs/{filenames[int(message.text)-1]}"
                 with open(filename, "r") as file:
                     lines = file.readlines()
-                    chunks = [lines[i : i + 50] for i in range(0, len(lines), 50)]
+                    chunks = [lines[i : i + 20] for i in range(0, len(lines), 20)]
                 edit_message = bot.send_message(message.from_user.id, ".")
                 bot.chunks[edit_message.id] = [
                     chunks,
                     filename,
                 ]
-                update_page(message, edit_message.id, message.from_user.id, bot, 0)
+                update_page(message, edit_message.id, message.from_user.id, bot, len(chunks)-1)
 
             else:
                 raise ValueError
