@@ -26,16 +26,6 @@ def setup_logging(log_file: str, level: int):
             },
         },
         "handlers": {
-            # "queue_handler": {
-            #     "class": "logging.handlers.QueueHandler",
-            #     "handlers": [
-            #         "stdout",
-            #         "file_general",
-            #         "file_outage",
-            #         "file_user_actions",
-            #     ],
-            #     "respect_handler_level": True,
-            # },
             "stdout": {
                 "class": "logging.StreamHandler",
                 "level": level,
@@ -47,18 +37,21 @@ def setup_logging(log_file: str, level: int):
                 "level": "INFO",
                 "formatter": "simple",
                 "filename": f"{general_logs}/{log_file}",
+                "encoding": "utf8",
             },
             "file_outage": {
                 "class": "logging.FileHandler",
                 "level": "INFO",
                 "formatter": "simple",
                 "filename": f"{outage_logs}/{log_file}",
+                "encoding": "utf8",
             },
             "file_user_actions": {
                 "class": "logging.FileHandler",
                 "level": "INFO",
                 "formatter": "simple",
                 "filename": f"{user_action_logs}/{log_file}",
+                "encoding": "utf8",
             },
         },
         "loggers": {

@@ -13,9 +13,11 @@ from electricity_bot.vars import (
     no_str,
     yes_str,
     generic_str,
+    group_dict,
 )
 from electricity_bot.time import get_date, get_time
 from electricity_bot.logger import log_cmd
+from electricity_bot.funcs import notify
 
 import logging
 
@@ -255,28 +257,23 @@ def _announce(message: types.Message, bot: TeleBot):
     if message.text == cancel_str:
         menu(message, bot)
     elif message.text in [outages_group_str, stats_group_str, all_str]:
-        match message.text:
-            case str(outages_group_str):
-                group = "outages"
-            case str(stats_group_str):
-                group = "stats"
-            case str(all_str):
-                group = "users"
+        group = group_dict[message.text]
         bot.send_message(
             message.from_user.id,
             f"⌨️ Тепер напишіть ваше оголошення.",
             parse_mode="html",
             reply_markup=cancel,
         )
+        # logger.info(group)
         bot.register_next_step_handler(message, announce, bot, group)
     else:
         bot.send_message(
             message.from_user.id,
             f'🤖 Не розумію. Оберіть відповідь "{outages_group_str}", "{stats_group_str}" або "{cancel_str}".',
             parse_mode="html",
-            reply_markup=generic_choice,
+            reply_markup=group_choice,
         )
-        bot.register_next_step_handler(message, _announce, bot, group)
+        bot.register_next_step_handler(message, _announce, bot)
 
 
 def announce(message: types.Message, bot: TeleBot, group: str):
@@ -285,45 +282,19 @@ def announce(message: types.Message, bot: TeleBot, group: str):
         menu(message, bot)
     else:
         logger.info(
-            f'Admin {message.from_user.first_name} {message.from_user.last_name} [{message.from_user.id}] announced to "{group}", text: {message.text}'
+            f"Admin {message.from_user.first_name} {message.from_user.last_name} [{message.from_user.id}] announced to {group}, text: {message.text}"
         )
-        logger.info(
-            f'Admin {message.from_user.first_name} {message.from_user.last_name} [{message.from_user.id}] announced to "{group}", text: {message.text}'
+        user_logger.info(
+            f"Admin {message.from_user.first_name} {message.from_user.last_name} [{message.from_user.id}] announced to {group}, text: {message.text}"
         )
         if group == "users":
-            group_list = list(bot.user_storage.read()[group].keys())
+            group_list = list(bot.user_storage.read()[group].keys())[1:]
         else:
             group_list = bot.user_storage.read()[group]
-        for user_id in group_list:
-            try:
-                bot.send_message(
-                    user_id,
-                    f"⚠️ Оголошення від адміністратора:\n\n{message.text}",
-                    parse_mode="html",
-                )
-                logger.info(f"Notified {user_id}")
-            except apihelper.ApiTelegramException as e:
-                if e.error_code == 403:
-                    logger.error(
-                        f"{user_id} has blocked the bot. Removing them from the list"
-                    )
-                    bot.user_storage.delete(user_id, group)
-                elif e.error_code in [401, 404]:
-                    logger.error(
-                        f"Could not access {user_id}. Removing them from the list"
-                    )
-                    bot.user_storage.delete(user_id, group)
-                continue
-            except Exception as e:
-                logger.error(
-                    f"{e} occured. Take actions regarding this error as soon as possible."
-                )
-                continue
-
-        logger.info(f"Notified users")
+        notify(bot, group_list, f"⚠️ Оголошення від адміністратора:\n\n{message.text}")
         bot.send_message(
             message.from_user.id,
-            f"✅ {len(bot.user_storage.read()[group])} отримали ваше оголошення.",
+            f"✅ {len(group_list)} отримали ваше оголошення.",
             parse_mode="html",
             reply_markup=admin_markup,
         )

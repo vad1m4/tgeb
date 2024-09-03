@@ -16,7 +16,7 @@ class TGEBImageScraper:
         self.chrome_options.add_argument("--headless=new")
         self.url = url
 
-    def scrape_images(self) -> list[str]:
+    def scrape_images(self) -> list[str | None]:
         self.driver = webdriver.Chrome(options=self.chrome_options)
         self.driver.get(self.url)
         sleep(5)

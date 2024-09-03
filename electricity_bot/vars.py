@@ -109,10 +109,12 @@ outages_group_str: str = "Відключення"
 stats_group_str: str = "Статистика"
 all_str: str = "Всім користувачам"
 
+group_dict = {outages_group_str: "outages", stats_group_str: "stats", all_str: "users"}
+
 group_choice: types.ReplyKeyboardMarkup = types.ReplyKeyboardMarkup(
     resize_keyboard=True, row_width=3
 )
 outages_group = types.KeyboardButton(outages_group_str)
 stats_group = types.KeyboardButton(stats_group_str)
-_all = types.KeyboardButton(stats_group_str)
+_all = types.KeyboardButton(all_str)
 group_choice.add(outages_group, stats_group, _all, cancel_b)
