@@ -348,15 +348,14 @@ def send_logs(message: types.Message, bot: TeleBot, filenames: list):
     else:
         try:
             if int(message.text) <= len(filenames) and int(message.text) > 0:
-                with open(
-                    Path.cwd() / f"general_logs\{filenames[int(message.text)-1]}", "r"
-                ) as file:
+                filename = Path.cwd() / f"general_logs/{filenames[int(message.text)-1]}"
+                with open(filename, "r") as file:
                     lines = file.readlines()
                     chunks = [lines[i : i + 50] for i in range(0, len(lines), 50)]
                 edit_message = bot.send_message(message.from_user.id, ".")
                 bot.chunks[edit_message.id] = [
                     chunks,
-                    Path.cwd() / f"general_logs\{filenames[int(message.text)-1]}",
+                    filename,
                 ]
                 update_page(message, edit_message.id, message.from_user.id, bot, 0)
 
@@ -412,3 +411,15 @@ def update_page(
         bot.edit_message_text(
             chat_id=chat_id, message_id=message_id, text="Сторінки скінчилися."
         )
+
+
+def user_stats(bot: TeleBot, message: types.Message):
+    data = bot.user_storage.read()
+    users = len(data["users"]) - 1
+    stats = len(data["stats"])
+    outages = len(data["outages"])
+    bot.send_message(
+        message.from_user.id,
+        f"Усього користувачів: {users}\n\nПідписано на статистику: {stats}\nПідписано на сповіщення: {outages}",
+    )
+    menu(message, bot)

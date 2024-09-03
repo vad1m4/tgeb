@@ -25,6 +25,7 @@ from electricity_bot.vars import (
     feedback_str,
     stats_str,
     logs_str,
+    user_stats_str,
 )
 from electricity_bot.time import get_date, get_unix
 
@@ -279,6 +280,14 @@ class Application(TeleBot):
                     self,
                     page_number,
                 )
+
+        @self.message_handler(regexp=user_stats_str)
+        @self.message_handler(commands=["user_stats"])
+        def logs(message: Message):
+            if self.is_admin(message.from_user.id):
+                admin_cmd.user_stats(self, message)
+            else:
+                admin_cmd.not_admin(message, self)
 
         ### Handle other
 
