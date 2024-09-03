@@ -90,6 +90,8 @@ blacklist_str: str = "Заблокувати номер"
 unblacklist_str: str = "Розблокувати номер"
 announcement_str: str = "Оголошення"
 stats_str: str = "Статистика"
+logs_str: str = "Передивитися логи"
+user_stats_str: str = "Статистика користувачів"
 
 admin_markup: types.ReplyKeyboardMarkup = types.ReplyKeyboardMarkup(
     resize_keyboard=True, row_width=2
@@ -101,8 +103,9 @@ blacklist = types.KeyboardButton(blacklist_str)
 unblacklist = types.KeyboardButton(unblacklist_str)
 announcement = types.KeyboardButton(announcement_str)
 stats = types.KeyboardButton(stats_str)
+logs = types.KeyboardButton(logs_str)
 admin_markup.add(
-    add_schedule, scrape, blacklist, unblacklist, announcement, stats, cancel_b
+    add_schedule, scrape, blacklist, unblacklist, announcement, stats, logs, cancel_b
 )
 
 outages_group_str: str = "Відключення"

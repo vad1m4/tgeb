@@ -24,6 +24,7 @@ from electricity_bot.vars import (
     announcement_str,
     feedback_str,
     stats_str,
+    logs_str,
 )
 from electricity_bot.time import get_date, get_unix
 
@@ -91,6 +92,8 @@ class Application(TeleBot):
         self.image_scraper = TGEBImageScraper("https://poweron.loe.lviv.ua/")
 
         self._init_schedule()
+
+        self.chunks = {}
         logger.info("All services have been initalized successfully")
         ### User commands
 
@@ -242,6 +245,41 @@ class Application(TeleBot):
             else:
                 admin_cmd.not_admin(message, self)
 
+        @self.message_handler(regexp=logs_str)
+        @self.message_handler(commands=["logs"])
+        def logs(message: Message):
+            if self.is_admin(message.from_user.id):
+                admin_cmd.logs_menu(self, message)
+            else:
+                admin_cmd.not_admin(message, self)
+
+        @self.callback_query_handler(
+            func=lambda call: call.data.startswith("page_")
+            or call.data in ["exit", "send_file"]
+        )
+        def handle_page_navigation(call):
+            if call.data in ["exit", "send_file"]:
+                self.edit_message_text(
+                    chat_id=call.message.chat.id,
+                    message_id=call.message.message_id,
+                    text="Ви вийшли з режиму перегляду файлу.",
+                )
+                if call.data == "send_file":
+                    admin_cmd.send_file(
+                        call.message, self, self.chunks[call.message.id][1]
+                    )
+                self.chunks.pop(call.message.id)
+                admin_cmd.menu(call.from_user, self)
+            else:
+                page_number = int(call.data.split("_")[1])
+                admin_cmd.update_page(
+                    call.message,
+                    call.message.message_id,
+                    call.message.chat.id,
+                    self,
+                    page_number,
+                )
+
         ### Handle other
 
         @self.message_handler(func=lambda message: True)
@@ -271,8 +309,13 @@ class Application(TeleBot):
 
         schedule.every().day.at("05:00", "Europe/Kiev").do(funcs.scrape_job, self, 0)
         schedule.every().day.at("10:00", "Europe/Kiev").do(funcs.scrape_job, self, 0)
+        schedule.every().day.at("11:00", "Europe/Kiev").do(funcs.scrape_job, self, 0)
         schedule.every().day.at("12:00", "Europe/Kiev").do(funcs.scrape_job, self, 0)
+        schedule.every().day.at("13:00", "Europe/Kiev").do(funcs.scrape_job, self, 0)
+        schedule.every().day.at("14:00", "Europe/Kiev").do(funcs.scrape_job, self, 0)
         schedule.every().day.at("15:00", "Europe/Kiev").do(funcs.scrape_job, self, 0)
+        schedule.every().day.at("16:00", "Europe/Kiev").do(funcs.scrape_job, self, 0)
+        schedule.every().day.at("17:00", "Europe/Kiev").do(funcs.scrape_job, self, 0)
         schedule.every().day.at("21:00", "Europe/Kiev").do(funcs.scrape_job, self, 1)
 
         run_event = threading.Event()
