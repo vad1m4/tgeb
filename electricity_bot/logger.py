@@ -26,16 +26,6 @@ def setup_logging(log_file: str, level: int):
             },
         },
         "handlers": {
-            # "queue_handler": {
-            #     "class": "logging.handlers.QueueHandler",
-            #     "handlers": [
-            #         "stdout",
-            #         "file_general",
-            #         "file_outage",
-            #         "file_user_actions",
-            #     ],
-            #     "respect_handler_level": True,
-            # },
             "stdout": {
                 "class": "logging.StreamHandler",
                 "level": level,
@@ -47,18 +37,21 @@ def setup_logging(log_file: str, level: int):
                 "level": "INFO",
                 "formatter": "simple",
                 "filename": f"{general_logs}/{log_file}",
+                "encoding": "utf8",
             },
             "file_outage": {
                 "class": "logging.FileHandler",
                 "level": "INFO",
                 "formatter": "simple",
                 "filename": f"{outage_logs}/{log_file}",
+                "encoding": "utf8",
             },
             "file_user_actions": {
                 "class": "logging.FileHandler",
                 "level": "INFO",
                 "formatter": "simple",
                 "filename": f"{user_action_logs}/{log_file}",
+                "encoding": "utf8",
             },
         },
         "loggers": {
@@ -92,7 +85,11 @@ def setup_logging(log_file: str, level: int):
 logger = logging.getLogger("user_actions")
 
 
-def log_cmd(message: Message, name: str):
+def log_cmd(data: Message, name: str):
+    if isinstance(data, Message):
+        from_user = data.from_user
+    else:
+        from_user = data
     logger.info(
-        f"{message.from_user.first_name} {message.from_user.last_name} [{message.from_user.id}] has used the following command: {name}"
+        f"{from_user.first_name} {from_user.last_name} [{from_user.id}] has used the following command: {name}"
     )

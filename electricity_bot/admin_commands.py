@@ -13,11 +13,16 @@ from electricity_bot.vars import (
     no_str,
     yes_str,
     generic_str,
+    group_dict,
 )
 from electricity_bot.time import get_date, get_time
 from electricity_bot.logger import log_cmd
+from electricity_bot.funcs import notify
 
 import logging
+
+import os
+from pathlib import Path
 
 logger = logging.getLogger("general")
 user_logger = logging.getLogger("user_actions")
@@ -32,10 +37,14 @@ def not_admin(message: types.Message, bot: TeleBot) -> None:
     )
 
 
-def menu(message: types.Message, bot: TeleBot) -> None:
-    log_cmd(message, "admin menu")
+def menu(data: types.Message, bot: TeleBot) -> None:
+    if isinstance(data, types.Message):
+        from_user = data.from_user
+    else:
+        from_user = data
+    log_cmd(from_user, "admin menu")
     bot.send_message(
-        message.from_user.id,
+        from_user.id,
         f"💻 Оберіть одну з опцій.",
         parse_mode="html",
         reply_markup=admin_markup,
@@ -255,28 +264,23 @@ def _announce(message: types.Message, bot: TeleBot):
     if message.text == cancel_str:
         menu(message, bot)
     elif message.text in [outages_group_str, stats_group_str, all_str]:
-        match message.text:
-            case str(outages_group_str):
-                group = "outages"
-            case str(stats_group_str):
-                group = "stats"
-            case str(all_str):
-                group = "users"
+        group = group_dict[message.text]
         bot.send_message(
             message.from_user.id,
             f"⌨️ Тепер напишіть ваше оголошення.",
             parse_mode="html",
             reply_markup=cancel,
         )
+        # logger.info(group)
         bot.register_next_step_handler(message, announce, bot, group)
     else:
         bot.send_message(
             message.from_user.id,
             f'🤖 Не розумію. Оберіть відповідь "{outages_group_str}", "{stats_group_str}" або "{cancel_str}".',
             parse_mode="html",
-            reply_markup=generic_choice,
+            reply_markup=group_choice,
         )
-        bot.register_next_step_handler(message, _announce, bot, group)
+        bot.register_next_step_handler(message, _announce, bot)
 
 
 def announce(message: types.Message, bot: TeleBot, group: str):
@@ -285,47 +289,137 @@ def announce(message: types.Message, bot: TeleBot, group: str):
         menu(message, bot)
     else:
         logger.info(
-            f'Admin {message.from_user.first_name} {message.from_user.last_name} [{message.from_user.id}] announced to "{group}", text: {message.text}'
+            f"Admin {message.from_user.first_name} {message.from_user.last_name} [{message.from_user.id}] announced to {group}, text: {message.text}"
         )
-        logger.info(
-            f'Admin {message.from_user.first_name} {message.from_user.last_name} [{message.from_user.id}] announced to "{group}", text: {message.text}'
+        user_logger.info(
+            f"Admin {message.from_user.first_name} {message.from_user.last_name} [{message.from_user.id}] announced to {group}, text: {message.text}"
         )
         if group == "users":
-            group_list = list(bot.user_storage.read()[group].keys())
+            group_list = list(bot.user_storage.read()[group].keys())[1:]
         else:
             group_list = bot.user_storage.read()[group]
-        for user_id in group_list:
-            try:
-                bot.send_message(
-                    user_id,
-                    f"⚠️ Оголошення від адміністратора:\n\n{message.text}",
-                    parse_mode="html",
-                )
-                logger.info(f"Notified {user_id}")
-            except apihelper.ApiTelegramException as e:
-                if e.error_code == 403:
-                    logger.error(
-                        f"{user_id} has blocked the bot. Removing them from the list"
-                    )
-                    bot.user_storage.delete(user_id, group)
-                elif e.error_code in [401, 404]:
-                    logger.error(
-                        f"Could not access {user_id}. Removing them from the list"
-                    )
-                    bot.user_storage.delete(user_id, group)
-                continue
-            except Exception as e:
-                logger.error(
-                    f"{e} occured. Take actions regarding this error as soon as possible."
-                )
-                continue
-
-        logger.info(f"Notified users")
+        notify(bot, group_list, f"⚠️ Оголошення від адміністратора:\n\n{message.text}")
         bot.send_message(
             message.from_user.id,
-            f"✅ {len(bot.user_storage.read()[group])} отримали ваше оголошення.",
+            f"✅ {len(group_list)} отримали ваше оголошення.",
             parse_mode="html",
             reply_markup=admin_markup,
         )
 
         menu(message, bot)
+
+
+def logs_menu(bot: TeleBot, message: types.Message):
+    log_cmd(message, "logs_menu")
+    # filenames = [:10]
+    # search_dir = "/mydir/"
+    os.chdir("general_logs/")
+    filenames = os.listdir()
+    # files = [os.path.join(search_dir, f) for f in files] # add path to each file
+    filenames.sort(key=lambda x: os.path.getmtime(x))
+    filenames.reverse()
+    filenames = filenames[:30]
+    if len(filenames) > 0:
+        formatted_filenames = []
+        for i, filename in enumerate(filenames, start=1):
+            stripped_filename = filename.removeprefix("bot_").removesuffix(".txt")
+            new_filename = f"{stripped_filename}_new.txt"
+            formatted_filenames.append(f"{i}. {new_filename}")
+        message_text = (
+            "\n".join(formatted_filenames)
+            + "\n\n📄 Введіть номер файлу який вас цікавить."
+        )
+        bot.send_message(message.from_user.id, message_text, reply_markup=cancel)
+        bot.register_next_step_handler(message, send_logs, bot, filenames)
+    else:
+        bot.send_message(message.from_user.id, "❌ Немає жодного файлу з логами.")
+        menu(message, bot)
+    os.chdir("..")
+
+
+def send_file(message: types.Message, bot: TeleBot, filename: str):
+    file = open(filename, "rb")
+    bot.send_document(message.chat.id, file)
+
+
+def send_logs(message: types.Message, bot: TeleBot, filenames: list):
+    if message.text == cancel_str:
+        menu(message, bot)
+    else:
+        try:
+            if int(message.text) <= len(filenames) and int(message.text) > 0:
+                filename = Path.cwd() / f"general_logs/{filenames[int(message.text)-1]}"
+                with open(filename, "r") as file:
+                    lines = file.readlines()
+                    chunks = [lines[i : i + 50] for i in range(0, len(lines), 50)]
+                edit_message = bot.send_message(message.from_user.id, ".")
+                bot.chunks[edit_message.id] = [
+                    chunks,
+                    filename,
+                ]
+                update_page(message, edit_message.id, message.from_user.id, bot, 0)
+
+            else:
+                raise ValueError
+        except ValueError:
+            bot.send_message(
+                message.from_user.id,
+                f"🤖 Не розумію. Оберіть відповідь від 1 до {len(filenames)}.",
+                parse_mode="html",
+                reply_markup=cancel_str,
+            )
+            bot.register_next_step_handler(message, send_logs, bot, filenames)
+
+
+def update_page(
+    message: types.Message,
+    message_id: int,
+    chat_id: int,
+    bot: TeleBot,
+    page_number: int,
+):
+    # chat_id = message.from_user.id
+    # message_id = message.id
+    chunks = bot.chunks[message_id][0]
+    if 0 <= page_number < len(chunks):
+        text = "".join(chunks[page_number])
+        markup = types.InlineKeyboardMarkup()
+
+        if page_number > 0:
+            markup.add(
+                types.InlineKeyboardButton(
+                    "⬆️ Попередня", callback_data=f"page_{page_number - 1}"
+                )
+            )
+
+        if page_number < len(chunks) - 1:
+            markup.add(
+                types.InlineKeyboardButton(
+                    "⬇️ Наступна", callback_data=f"page_{page_number + 1}"
+                )
+            )
+
+        markup.add(types.InlineKeyboardButton("❌ Вийти", callback_data="exit"))
+        markup.add(
+            types.InlineKeyboardButton("📄 Переглянути файл", callback_data="send_file")
+        )
+
+        bot.edit_message_text(
+            chat_id=chat_id, message_id=message_id, text=text, reply_markup=markup
+        )
+    else:
+        bot.edit_message_text(
+            chat_id=chat_id, message_id=message_id, text="Сторінки скінчилися."
+        )
+
+
+def user_stats(bot: TeleBot, message: types.Message):
+    data = bot.user_storage.read()
+    users = len(data["users"]) - 1
+    stats = len(data["stats"])
+    outages = len(data["outages"])
+    bot.send_message(
+        message.from_user.id,
+        f"Усього користувачів: {users}\n\nПідписано на статистику: {stats}\nПідписано на сповіщення: {outages}",
+    )
+    menu(message, bot)

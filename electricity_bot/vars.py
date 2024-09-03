@@ -90,6 +90,8 @@ blacklist_str: str = "Заблокувати номер"
 unblacklist_str: str = "Розблокувати номер"
 announcement_str: str = "Оголошення"
 stats_str: str = "Статистика"
+logs_str: str = "Передивитися логи"
+user_stats_str: str = "Кільікість користувачів"
 
 admin_markup: types.ReplyKeyboardMarkup = types.ReplyKeyboardMarkup(
     resize_keyboard=True, row_width=2
@@ -101,18 +103,30 @@ blacklist = types.KeyboardButton(blacklist_str)
 unblacklist = types.KeyboardButton(unblacklist_str)
 announcement = types.KeyboardButton(announcement_str)
 stats = types.KeyboardButton(stats_str)
+logs = types.KeyboardButton(logs_str)
+user_stats = types.KeyboardButton(user_stats_str)
 admin_markup.add(
-    add_schedule, scrape, blacklist, unblacklist, announcement, stats, cancel_b
+    add_schedule,
+    scrape,
+    blacklist,
+    unblacklist,
+    announcement,
+    stats,
+    logs,
+    user_stats,
+    cancel_b,
 )
 
 outages_group_str: str = "Відключення"
 stats_group_str: str = "Статистика"
 all_str: str = "Всім користувачам"
 
+group_dict = {outages_group_str: "outages", stats_group_str: "stats", all_str: "users"}
+
 group_choice: types.ReplyKeyboardMarkup = types.ReplyKeyboardMarkup(
     resize_keyboard=True, row_width=3
 )
 outages_group = types.KeyboardButton(outages_group_str)
 stats_group = types.KeyboardButton(stats_group_str)
-_all = types.KeyboardButton(stats_group_str)
+_all = types.KeyboardButton(all_str)
 group_choice.add(outages_group, stats_group, _all, cancel_b)

@@ -17,8 +17,12 @@ logger = logging.getLogger("general")
 outage_logger = logging.getLogger("outage")
 
 
-def notify(bot: TeleBot, group: str, message: str):
-    for user_id in bot.user_storage.read()[group]:
+def notify(bot: TeleBot, group: str | list, message: str):
+    if isinstance(group, list):
+        group_list = group
+    else:
+        group_list = bot.user_storage.read()[group]
+    for user_id in group_list:
         try:
             bot.send_message(
                 user_id,
